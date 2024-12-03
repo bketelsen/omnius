@@ -84,7 +84,7 @@ func SetupSystemRoutes(r chi.Router, cli *client.Client, ns *embeddednats.Server
 					}
 					switch k := entry.Key(); k {
 					case "virtualMemory":
-						slog.Info("Memory Update")
+						//	slog.Info("Memory Update")
 						var v mem.VirtualMemoryStat
 						if err := json.Unmarshal(entry.Value(), &v); err != nil {
 							slog.Error("Memory Update", "error", err)
@@ -98,7 +98,7 @@ func SetupSystemRoutes(r chi.Router, cli *client.Client, ns *embeddednats.Server
 						}
 
 					case "cpu":
-						slog.Info("CPU Update")
+						//	slog.Info("CPU Update")
 						var v CPUSimple
 						if err := json.Unmarshal(entry.Value(), &v); err != nil {
 							slog.Error("CPU Update", "error", err)
