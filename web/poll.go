@@ -64,6 +64,12 @@ func poll(ctx context.Context, ns *embeddednats.Server, stores *stores.KVStores)
 
 }
 
+type CPUSimple struct {
+	UsedPercent string `json:"usedPercent"`
+	Used        string `json:"used"`
+	Cores       int    `json:"cores"`
+}
+
 func pollSystem(ctx context.Context, systemkv jetstream.KeyValue) toolbelt.CtxErrFunc {
 	return func(ctxp context.Context) (err error) {
 		for {
@@ -71,7 +77,7 @@ func pollSystem(ctx context.Context, systemkv jetstream.KeyValue) toolbelt.CtxEr
 			case <-ctx.Done():
 				defer slog.Info("Stopping system updates")
 				return
-			case <-time.After(5 * time.Second):
+			case <-time.After(2 * time.Second):
 				slog.Info("system tick")
 				var (
 					err error
@@ -96,39 +102,22 @@ func pollSystem(ctx context.Context, systemkv jetstream.KeyValue) toolbelt.CtxEr
 				if err != nil {
 					return fmt.Errorf("error getting cpu counts: %w", err)
 				}
-				b, err = json.Marshal(cores)
-				if err != nil {
-					slog.Error(err.Error())
-					continue
-				}
-				if _, err := systemkv.Put(context.Background(), "cores", b); err != nil {
-					slog.Error(err.Error())
 
-					continue
-				}
 				usage, err := cpu.Percent(0, false)
 				if err != nil {
 					return fmt.Errorf("error getting cpu percent: %w", err)
 				}
 				used := fmt.Sprintf("%.2f", usage[0])
-				b, err = json.Marshal(used)
+				b, err = json.Marshal(CPUSimple{
+					UsedPercent: used,
+					Used:        fmt.Sprintf("%.0f", usage[0]),
+					Cores:       cores,
+				})
 				if err != nil {
 					slog.Error(err.Error())
 					continue
 				}
-				if _, err := systemkv.Put(context.Background(), "used", b); err != nil {
-					slog.Error(err.Error())
-
-					continue
-				}
-				// round usage to whole number
-				usedPercent := fmt.Sprintf("%.0f", usage[0])
-				b, err = json.Marshal(usedPercent)
-				if err != nil {
-					slog.Error(err.Error())
-					continue
-				}
-				if _, err := systemkv.Put(context.Background(), "usedPercent", b); err != nil {
+				if _, err := systemkv.Put(context.Background(), "cpu", b); err != nil {
 					slog.Error(err.Error())
 
 					continue

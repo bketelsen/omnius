@@ -14,11 +14,11 @@ import (
 	"strconv"
 )
 
-templ SystemPage(v *mem.VirtualMemoryStat) {
+templ SystemPage(c CPUSimple, v *mem.VirtualMemoryStat) {
 	@layouts.Page() {
 		<div data-on-load="$get('/system/poll')">
 			@components.CardGallery() {
-				@CPUDetail()
+				@CPUDetail(c)
 				@MemoryDetail(v)
 				@logs.LogsOverview([]types.Container{})
 				@storage.StorageOverview([]types.Container{})
@@ -34,8 +34,10 @@ templ SystemOverview() {
 	@components.OverviewCard("System", "/system")
 }
 
-templ CPUDetail() {
-	@components.DetailCard("CPU", "cpu")
+templ CPUDetail(c CPUSimple) {
+	@components.DetailCard("CPU", "cpu") {
+		@cpuDetailCard(c)
+	}
 }
 
 templ MemoryDetail(v *mem.VirtualMemoryStat) {
@@ -53,14 +55,14 @@ templ memoryDetailCard(v *mem.VirtualMemoryStat) {
 	</div>
 }
 
-templ cpuDetailCard(cores int, used string, percent string) {
+templ cpuDetailCard(c CPUSimple) {
 	<div id="cpu">
 		@components.Stats() {
-			@components.Stat("Cores", strconv.Itoa(cores), "")
-			@components.Stat("Usage", used, "Percent")
+			@components.Stat("Cores", strconv.Itoa(c.Cores), "")
+			@components.Stat("Usage", c.Used, "Percent")
 		}
 		<div>
-			0<progress class="progress progress-error w-56" value={ percent } max="100"></progress>100
+			0<progress class="progress progress-error w-56" value={ c.UsedPercent } max="100"></progress>100
 		</div>
 	</div>
 }
