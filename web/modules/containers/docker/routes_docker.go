@@ -42,7 +42,7 @@ func SetupDockerRoutes(r chi.Router, logger *slog.Logger, cli *client.Client, ns
 			}
 			sse := datastar.NewSSE(w, r)
 			// do it quick to avoid page delay
-			c := dockerContainer(containers)
+			c := DockerContainer(containers)
 
 			if err := sse.MergeFragmentTempl(c); err != nil {
 				sse.ConsoleError(err)
@@ -59,7 +59,7 @@ func SetupDockerRoutes(r chi.Router, logger *slog.Logger, cli *client.Client, ns
 						http.Error(w, err.Error(), http.StatusInternalServerError)
 						return
 					}
-					c := dockerContainer(containers)
+					c := DockerContainer(containers)
 
 					if err := sse.MergeFragmentTempl(c); err != nil {
 						sse.ConsoleError(err)
@@ -86,7 +86,7 @@ func SetupDockerRoutes(r chi.Router, logger *slog.Logger, cli *client.Client, ns
 			}
 			sse := datastar.NewSSE(w, r)
 
-			sse.MergeFragmentTempl(dockerContainer(containers))
+			sse.MergeFragmentTempl(DockerContainer(containers))
 
 		})
 		dockerRouter.Post("/api/{id}/stop", func(w http.ResponseWriter, r *http.Request) {
@@ -107,7 +107,7 @@ func SetupDockerRoutes(r chi.Router, logger *slog.Logger, cli *client.Client, ns
 				return
 			}
 			sse := datastar.NewSSE(w, r)
-			sse.MergeFragmentTempl(dockerContainer(containers))
+			sse.MergeFragmentTempl(DockerContainer(containers))
 
 		})
 		dockerRouter.Post("/api/{id}/unpause", func(w http.ResponseWriter, r *http.Request) {
@@ -125,7 +125,7 @@ func SetupDockerRoutes(r chi.Router, logger *slog.Logger, cli *client.Client, ns
 				return
 			}
 			sse := datastar.NewSSE(w, r)
-			sse.MergeFragmentTempl(dockerContainer(containers))
+			sse.MergeFragmentTempl(DockerContainer(containers))
 
 		})
 

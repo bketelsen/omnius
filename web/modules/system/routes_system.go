@@ -7,8 +7,11 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/bketelsen/omnius/web/modules/containers/docker"
 	"github.com/bketelsen/omnius/web/stores"
+
 	"github.com/delaneyj/toolbelt/embeddednats"
+	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/client"
 	"github.com/go-chi/chi/v5"
 	"github.com/shirou/gopsutil/v4/mem"
@@ -31,7 +34,8 @@ func SetupSystemRoutes(r chi.Router, cli *client.Client, ns *embeddednats.Server
 				Used:        "0",
 				Cores:       0,
 			}
-			SystemPage(c, v).Render(r.Context(), w)
+			containers := []types.Container{}
+			SystemPage(c, v, containers).Render(r.Context(), w)
 		})
 
 		systemRouter.Get("/poll", func(w http.ResponseWriter, r *http.Request) {
@@ -45,14 +49,36 @@ func SetupSystemRoutes(r chi.Router, cli *client.Client, ns *embeddednats.Server
 				return
 			}
 			defer syswatcher.Stop()
+			dockerwatcher, err := stores.DockerStore.Watch(ctx, "containers")
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+			defer dockerwatcher.Stop()
 			slog.Info("Start Polling System")
 
 			for {
 				select {
 				case <-ctx.Done():
 					return
+				case entry := <-dockerwatcher.Updates():
+					//	slog.Info("Docker Update", "entry", entry)
+					if entry == nil {
+						continue
+					}
+					var cc []types.Container
+					if err := json.Unmarshal(entry.Value(), &cc); err != nil {
+						slog.Error("Docker Update", "error", err)
+						sse.ConsoleError(err)
+						continue
+					}
+					c := docker.DockerContainer(cc)
+					if err := sse.MergeFragmentTempl(c); err != nil {
+						sse.ConsoleError(err)
+						return
+					}
 				case entry := <-syswatcher.Updates():
-					slog.Info("System Update", "entry", entry)
+					//		slog.Info("System Update", "entry", entry)
 					if entry == nil {
 						continue
 					}

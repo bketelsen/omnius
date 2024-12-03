@@ -17,11 +17,11 @@ templ DockerPage(containers []types.Container) {
 
 templ DockerOverview(containers []types.Container) {
 	@components.OverviewCard("Docker", "/docker") {
-		@dockerContainer(containers)
+		@DockerContainer(containers)
 	}
 }
 
-templ dockerContainer(containers []types.Container) {
+templ DockerContainer(containers []types.Container) {
 	<div id="dockercontainers" class="overflow-x-auto">
 		<table class="table">
 			<!-- head -->

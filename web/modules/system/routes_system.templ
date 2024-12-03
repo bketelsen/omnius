@@ -14,7 +14,7 @@ import (
 	"strconv"
 )
 
-templ SystemPage(c CPUSimple, v *mem.VirtualMemoryStat) {
+templ SystemPage(c CPUSimple, v *mem.VirtualMemoryStat, containers []types.Container) {
 	@layouts.Page() {
 		<div data-on-load="$get('/system/poll')">
 			@components.CardGallery() {
@@ -23,7 +23,7 @@ templ SystemPage(c CPUSimple, v *mem.VirtualMemoryStat) {
 				@logs.LogsOverview([]types.Container{})
 				@storage.StorageOverview([]types.Container{})
 				@networking.NetworkOverview([]types.Container{})
-				@docker.DockerOverview([]types.Container{})
+				@docker.DockerOverview(containers)
 				@incus.IncusOverview([]types.Container{})
 			}
 		</div>
