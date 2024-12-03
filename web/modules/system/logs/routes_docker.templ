@@ -10,13 +10,13 @@ import (
 templ LogsPage(containers []types.Container) {
 	@layouts.Page() {
 		@components.CardGallery() {
-			@LogsOverview()
+			@LogsOverview(containers)
 		}
 	}
 }
 
-templ LogsOverview() {
-	@components.OverviewCard("Logs", "logs", "$get('/logs/api')", "/logs")
+templ LogsOverview(containers []types.Container) {
+	@components.OverviewCard("Logs", "/logs")
 }
 
 templ dockerContainer(containers []types.Container) {

@@ -7,16 +7,17 @@ import (
 	"github.com/bketelsen/omnius/web/modules/system/logs"
 	"github.com/bketelsen/omnius/web/modules/system/networking"
 	"github.com/bketelsen/omnius/web/modules/system/storage"
+	"github.com/docker/docker/api/types"
 )
 
 templ HomePage() {
 	@layouts.Page() {
 		<div class="flex flex-wrap justify-center mt-10">
-			@logs.LogsOverview()
-			@storage.StorageOverview()
-			@networking.NetworkOverview()
-			@docker.DockerOverview()
-			@incus.IncusOverview()
+			@logs.LogsOverview([]types.Container{})
+			@storage.StorageOverview([]types.Container{})
+			@networking.NetworkOverview([]types.Container{})
+			@docker.DockerOverview([]types.Container{})
+			@incus.IncusOverview([]types.Container{})
 		</div>
 	}
 }

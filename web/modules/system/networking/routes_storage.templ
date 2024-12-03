@@ -10,13 +10,13 @@ import (
 templ NetworkPage(containers []types.Container) {
 	@layouts.Page() {
 		@components.CardGallery() {
-			@NetworkOverview()
+			@NetworkOverview(containers)
 		}
 	}
 }
 
-templ NetworkOverview() {
-	@components.OverviewCard("Network", "networking", "$get('/networking/api')", "/networking")
+templ NetworkOverview(containers []types.Container) {
+	@components.OverviewCard("Network", "/networking")
 }
 
 templ dockerContainer(containers []types.Container) {

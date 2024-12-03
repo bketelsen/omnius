@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/delaneyj/toolbelt/embeddednats"
 	"github.com/docker/docker/api/types"
 	containertypes "github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/client"
@@ -11,7 +12,7 @@ import (
 	datastar "github.com/starfederation/datastar/code/go/sdk"
 )
 
-func SetupNetworkingRoutes(r chi.Router, cli *client.Client) error {
+func SetupNetworkingRoutes(r chi.Router, cli *client.Client, ns *embeddednats.Server) error {
 
 	r.Route("/networking", func(networkRouter chi.Router) {
 

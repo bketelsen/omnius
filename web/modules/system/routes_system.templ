@@ -9,34 +9,39 @@ import (
 	"github.com/bketelsen/omnius/web/modules/system/logs"
 	"github.com/bketelsen/omnius/web/modules/system/networking"
 	"github.com/bketelsen/omnius/web/modules/system/storage"
+	"github.com/docker/docker/api/types"
 	"github.com/shirou/gopsutil/v4/mem"
 	"strconv"
 )
 
 templ SystemPage(v *mem.VirtualMemoryStat) {
 	@layouts.Page() {
-		@components.CardGallery() {
-			@CPUDetail()
-			@MemoryDetail()
-			@logs.LogsOverview()
-			@storage.StorageOverview()
-			@networking.NetworkOverview()
-			@docker.DockerOverview()
-			@incus.IncusOverview()
-		}
+		<div data-on-load="$get('/system/poll')">
+			@components.CardGallery() {
+				@CPUDetail()
+				@MemoryDetail(v)
+				@logs.LogsOverview([]types.Container{})
+				@storage.StorageOverview([]types.Container{})
+				@networking.NetworkOverview([]types.Container{})
+				@docker.DockerOverview([]types.Container{})
+				@incus.IncusOverview([]types.Container{})
+			}
+		</div>
 	}
 }
 
 templ SystemOverview() {
-	@components.OverviewCard("System", "system", "$get('/system/api')", "/system")
+	@components.OverviewCard("System", "/system")
 }
 
 templ CPUDetail() {
-	@components.DetailCard("CPU", "cpu", "$get('/system/api/cpu')")
+	@components.DetailCard("CPU", "cpu")
 }
 
-templ MemoryDetail() {
-	@components.DetailCard("Memory", "memory", "$get('/system/api/memory')")
+templ MemoryDetail(v *mem.VirtualMemoryStat) {
+	@components.DetailCard("Memory", "memory") {
+		@memoryDetailCard(v)
+	}
 }
 
 templ memoryDetailCard(v *mem.VirtualMemoryStat) {

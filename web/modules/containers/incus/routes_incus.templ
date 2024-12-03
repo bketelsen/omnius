@@ -10,13 +10,13 @@ import (
 templ IncusPage(containers []types.Container) {
 	@layouts.Page() {
 		@components.CardGallery() {
-			@IncusOverview()
+			@IncusOverview(containers)
 		}
 	}
 }
 
-templ IncusOverview() {
-	@components.OverviewCard("Incus", "incuscontainers", "$get('/incus/api')", "/incus")
+templ IncusOverview(containers []types.Container) {
+	@components.OverviewCard("Incus", "/incus")
 }
 
 templ incusContainer(containers []types.Container) {

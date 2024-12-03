@@ -10,13 +10,15 @@ import (
 templ DockerPage(containers []types.Container) {
 	@layouts.Page() {
 		@components.CardGallery() {
-			@DockerOverview()
+			@DockerOverview(containers)
 		}
 	}
 }
 
-templ DockerOverview() {
-	@components.OverviewCard("Docker", "dockercontainers", "$get('/docker/api')", "/docker")
+templ DockerOverview(containers []types.Container) {
+	@components.OverviewCard("Docker", "/docker") {
+		@dockerContainer(containers)
+	}
 }
 
 templ dockerContainer(containers []types.Container) {

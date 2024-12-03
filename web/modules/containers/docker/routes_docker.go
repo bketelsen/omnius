@@ -1,9 +1,13 @@
 package docker
 
 import (
+	"context"
+	"log/slog"
 	"net/http"
 	"time"
 
+	"github.com/bketelsen/omnius/web/stores"
+	"github.com/delaneyj/toolbelt/embeddednats"
 	"github.com/docker/docker/api/types"
 	containertypes "github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/client"
@@ -11,7 +15,7 @@ import (
 	datastar "github.com/starfederation/datastar/code/go/sdk"
 )
 
-func SetupDockerRoutes(r chi.Router, cli *client.Client) error {
+func SetupDockerRoutes(r chi.Router, logger *slog.Logger, cli *client.Client, ns *embeddednats.Server, stores *stores.KVStores, ctx context.Context) error {
 
 	r.Route("/docker", func(dockerRouter chi.Router) {
 

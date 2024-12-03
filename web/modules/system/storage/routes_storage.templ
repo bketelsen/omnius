@@ -10,13 +10,13 @@ import (
 templ StoragePage(containers []types.Container) {
 	@layouts.Page() {
 		@components.CardGallery() {
-			@StorageOverview()
+			@StorageOverview(containers)
 		}
 	}
 }
 
-templ StorageOverview() {
-	@components.OverviewCard("Storage", "storage", "$get('/storage/api')", "/storage")
+templ StorageOverview(containers []types.Container) {
+	@components.OverviewCard("Storage", "/storage")
 }
 
 templ dockerContainer(containers []types.Container) {
