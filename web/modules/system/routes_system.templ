@@ -1,0 +1,89 @@
+package system
+
+import (
+	"fmt"
+	"github.com/bketelsen/omnius/web/components"
+	"github.com/bketelsen/omnius/web/layouts"
+	"github.com/bketelsen/omnius/web/modules/containers/docker"
+	"github.com/bketelsen/omnius/web/modules/containers/incus"
+	"github.com/bketelsen/omnius/web/modules/system/logs"
+	"github.com/bketelsen/omnius/web/modules/system/networking"
+	"github.com/bketelsen/omnius/web/modules/system/storage"
+	"github.com/shirou/gopsutil/v4/mem"
+	"strconv"
+)
+
+templ SystemPage(v *mem.VirtualMemoryStat) {
+	@layouts.Page() {
+		@components.CardGallery() {
+			@CPUDetail()
+			@MemoryDetail()
+			@logs.LogsOverview()
+			@storage.StorageOverview()
+			@networking.NetworkOverview()
+			@docker.DockerOverview()
+			@incus.IncusOverview()
+		}
+	}
+}
+
+templ SystemOverview() {
+	@components.OverviewCard("System", "system", "$get('/system/api')", "/system")
+}
+
+templ CPUDetail() {
+	@components.DetailCard("CPU", "cpu", "$get('/system/api/cpu')")
+}
+
+templ MemoryDetail() {
+	@components.DetailCard("Memory", "memory", "$get('/system/api/memory')")
+}
+
+templ memoryDetailCard(v *mem.VirtualMemoryStat) {
+	<div id="memory">
+		@components.Stats() {
+			@components.Stat("Total Memory", ByteCountIEC(v.Total), "")
+			@components.Stat("Used Memory", ByteCountIEC(v.Used), "")
+		}
+	</div>
+}
+
+templ cpuDetailCard(cores int, used string, percent string) {
+	<div id="cpu">
+		@components.Stats() {
+			@components.Stat("Cores", strconv.Itoa(cores), "")
+			@components.Stat("Usage", used, "Percent")
+		}
+		<div>
+			0<progress class="progress progress-error w-56" value={ percent } max="100"></progress>100
+		</div>
+	</div>
+}
+
+func ByteCountSI(b uint64) string {
+	const unit = 1000
+	if b < unit {
+		return fmt.Sprintf("%d B", b)
+	}
+	div, exp := int64(unit), 0
+	for n := b / unit; n >= unit; n /= unit {
+		div *= unit
+		exp++
+	}
+	return fmt.Sprintf("%.1f %cB",
+		float64(b)/float64(div), "kMGTPE"[exp])
+}
+
+func ByteCountIEC(b uint64) string {
+	const unit = 1024
+	if b < unit {
+		return fmt.Sprintf("%d B", b)
+	}
+	div, exp := int64(unit), 0
+	for n := b / unit; n >= unit; n /= unit {
+		div *= unit
+		exp++
+	}
+	return fmt.Sprintf("%.1f %ciB",
+		float64(b)/float64(div), "KMGTPE"[exp])
+}

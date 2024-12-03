@@ -1,0 +1,83 @@
+package layouts
+
+import ()
+
+templ Page() {
+	<!DOCTYPE html>
+	<html lang="en">
+		<head>
+			<meta charset="UTF-8"/>
+			<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+			<link href="/static/site.css" rel="stylesheet" type="text/css"/>
+			<script type="module" src="https://cdn.jsdelivr.net/gh/starfederation/datastar/bundles/datastar.js"></script>
+			<title>Omnius</title>
+		</head>
+		<body
+			data-on-pageshow.window="evt?.persisted && window.location.reload()"
+			class="flex flex-col min-h-screen overflow-y-scroll  scrollbar scrollbar-thumb-primary scrollbar-track-accent"
+		>
+			<div class="antialiased bg-gray-950 text-white flex flex-col">
+				<div class="drawer lg:drawer-open">
+					<input id="my-drawer-2" type="checkbox" class="drawer-toggle"/>
+					<div class="drawer-content flex flex-col items-center justify-center">
+						<!-- Page content here -->
+						<div class="navbar bg-base-100">
+							<div class="flex-none">
+								<label for="my-drawer-2" class="btn btn-square btn-ghost lg:hidden">
+									<svg
+										xmlns="http://www.w3.org/2000/svg"
+										fill="none"
+										viewBox="0 0 24 24"
+										class="inline-block h-5 w-5 stroke-current"
+									>
+										<path
+											stroke-linecap="round"
+											stroke-linejoin="round"
+											stroke-width="2"
+											d="M4 6h16M4 12h16M4 18h16"
+										></path>
+									</svg>
+								</label>
+							</div>
+							<a href="/" class="btn btn-ghost font-bold text-xl">
+								<span class="text-accent">Omnius</span>
+							</a>
+						</div>
+						<main class="flex-1">
+							{ children... }
+						</main>
+						<footer class="font-light text-center py-3 text-gray-500">
+							<a
+								href="https://github.com/bketelsen/omnius"
+								target="_blank"
+								rel="noopener noreferrer"
+							>
+								GitHub
+							</a>
+						</footer>
+					</div>
+					<div class="drawer-side">
+						<label for="my-drawer-2" aria-label="close sidebar" class="drawer-overlay"></label>
+						<ul class="menu bg-base-200 min-h-full w-80 p-4">
+							<li class="menu-title">System</li>
+							<li><a href="/system">Overview</a></li>
+							<li><a href="/logs">Logs</a></li>
+							<li><a href="/storage">Storage</a></li>
+							<li><a href="/networking">Networking</a></li>
+							<li><a href="/services">Services</a></li>
+							<li class="mt-4 menu-title">Containers</li>
+							<li><a href="/docker">Docker</a></li>
+							<li><a href="/incus">Incus</a></li>
+							<li class="mt-4 menu-title">Accounts</li>
+							<li><a>Users</a></li>
+							<li><a>Groups</a></li>
+							<li class="mt-4 menu-title">Shares</li>
+							<li><a>NFS</a></li>
+							<li><a>Samba</a></li>
+						</ul>
+					</div>
+				</div>
+			</div>
+		</body>
+	</html>
+}

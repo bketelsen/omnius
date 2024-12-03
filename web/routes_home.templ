@@ -1,0 +1,22 @@
+package web
+
+import (
+	"github.com/bketelsen/omnius/web/layouts"
+	"github.com/bketelsen/omnius/web/modules/containers/docker"
+	"github.com/bketelsen/omnius/web/modules/containers/incus"
+	"github.com/bketelsen/omnius/web/modules/system/logs"
+	"github.com/bketelsen/omnius/web/modules/system/networking"
+	"github.com/bketelsen/omnius/web/modules/system/storage"
+)
+
+templ HomePage() {
+	@layouts.Page() {
+		<div class="flex flex-wrap justify-center mt-10">
+			@logs.LogsOverview()
+			@storage.StorageOverview()
+			@networking.NetworkOverview()
+			@docker.DockerOverview()
+			@incus.IncusOverview()
+		</div>
+	}
+}

@@ -1,0 +1,66 @@
+package networking
+
+import (
+	"github.com/bketelsen/omnius/web/components"
+	"github.com/bketelsen/omnius/web/layouts"
+	"github.com/docker/docker/api/types"
+	datastar "github.com/starfederation/datastar/code/go/sdk"
+)
+
+templ NetworkPage(containers []types.Container) {
+	@layouts.Page() {
+		@components.CardGallery() {
+			@NetworkOverview()
+		}
+	}
+}
+
+templ NetworkOverview() {
+	@components.OverviewCard("Network", "networking", "$get('/networking/api')", "/networking")
+}
+
+templ dockerContainer(containers []types.Container) {
+	<div id="networking" class="overflow-x-auto">
+		<table class="table">
+			<!-- head -->
+			<thead>
+				<tr>
+					<th></th>
+					<th>ID</th>
+					<th>Image</th>
+					<th>Status</th>
+					<th>Actions</th>
+				</tr>
+			</thead>
+			<tbody>
+				for _, container := range containers {
+					<!-- row 1 -->
+					<tr>
+						<th></th>
+						<td>{ container.ID[0:12] }</td>
+						<td>{ container.Image }</td>
+						<td>{ container.Status }</td>
+						<td>
+							<div class="join">
+								@pauseButton(container)
+								@startButton(container)
+							</div>
+						</td>
+					</tr>
+				}
+			</tbody>
+		</table>
+	</div>
+}
+
+templ pauseButton(container types.Container) {
+	if container.State == "paused" {
+		<button class="join-item btn btn-xs btn-warning" data-on-click={ datastar.PostSSE("/docker/api/" + container.ID + "/unpause") }>Unpause</button>
+	} else {
+		<button class="join-item btn btn-xs btn-warning " data-on-click={ datastar.PostSSE("/docker/api/" + container.ID + "/pause") }>Pause</button>
+	}
+}
+
+templ startButton(container types.Container) {
+	<button class="join-item btn btn-xs btn-error " data-on-click={ datastar.PostSSE("/docker/api/" + container.ID + "/stop") }>Stop</button>
+}

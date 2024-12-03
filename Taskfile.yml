@@ -1,0 +1,86 @@
+# https://taskfile.dev
+
+version: "3"
+
+interval: 100ms
+
+tasks:
+  tools:
+    cmds:
+      - go install github.com/a-h/templ/cmd/templ@latest
+      - go get github.com/a-h/templ
+      - go install golang.org/x/tools/cmd/goimports@latest
+      - test -f web/gen/css/tailwindcli || wget -O web/gen/css/tailwindcli https://github.com/dobicinaitis/tailwind-cli-extra/releases/download/v1.7.21/tailwindcss-extra-linux-x64
+      - chmod +x web/gen/css/tailwindcli
+
+  css:
+    dir: web
+    sources:
+      - "**/*.templ"
+      - "**/*.md"
+      - "**/*.go"
+    generates:
+      - "static/css/site.css"
+    cmds:
+      - ./gen/css/tailwindcli build -i gen/css/site.css -o static/site.css
+
+  templ:
+    env:
+      TEMPL_EXPERIMENT: rawgo
+    generates:
+      - "**/*_templ.go"
+    sources:
+      - "**/*.templ"
+    cmds:
+      - templ generate .
+
+  site:
+    method: none
+    watch: true
+    desc: build and run site
+    sources:
+      - web/**/*.templ
+      - web/**/*.go
+      - web/static/**/*
+    generates:
+      - ./website
+    deps:
+      - templ
+      - css
+
+    cmds:
+      - go mod tidy
+      - go build -tags dev -o ./website cmd/site/main.go
+      - ./website
+
+  build:
+    method: none
+
+    desc: build site
+    sources:
+      - web/**/*.templ
+      - web/**/*.go
+      - web/static/**/*
+    generates:
+      - ./website
+    deps:
+      - templ
+      - css
+    cmds:
+      - go mod tidy
+      - go build -o ./website cmd/site/main.go
+
+  upx:
+    cmds:
+      - go build -ldflags="-s -w" -o website cmd/site/main.go
+      - upx -9 website
+
+  kill:
+    method: none
+    cmds:
+      - fuser -k 4321/tcp > /dev/null 2>&1 || true
+
+  default:
+    deps:
+      - site
+    silent: true

@@ -1,0 +1,46 @@
+package components
+
+templ CardGallery() {
+	<div class="flex flex-wrap justify-center mt-6">
+		{ children... }
+	</div>
+}
+
+templ OverviewCard(title string, id string, onload string, manage string) {
+	<div class="mx-2 my-2 card bg-base-100 max-w-lg shadow-xl">
+		<div class="card-body">
+			<h2 class="card-title">{ title }</h2>
+			<div id={ id } data-on-load={ onload }>
+				<p>Loading...</p>
+			</div>
+			<div class="card-actions justify-end">
+				<a href={ templ.SafeURL(manage) } class="btn btn-outline btn-sm">Manage</a>
+			</div>
+		</div>
+	</div>
+}
+
+templ DetailCard(title string, id string, onload string) {
+	<div class="mx-2 my-2 card bg-base-100 max-w-lg shadow-xl">
+		<div class="card-body">
+			<h2 class="card-title">{ title }</h2>
+			<div id={ id } data-on-load={ onload }>
+				<p>Loading...</p>
+			</div>
+		</div>
+	</div>
+}
+
+templ Stats() {
+	<div class="stats shadow">
+		{ children... }
+	</div>
+}
+
+templ Stat(title, value, desc string) {
+	<div class="stat">
+		<div class="stat-title">{ title }</div>
+		<div class="stat-value">{ value }</div>
+		<div class="stat-desc">{ desc }</div>
+	</div>
+}
