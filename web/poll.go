@@ -12,6 +12,7 @@ import (
 	"github.com/delaneyj/toolbelt/embeddednats"
 	"github.com/docker/docker/api/types"
 	containertypes "github.com/docker/docker/api/types/container"
+	"github.com/docker/docker/api/types/image"
 	"github.com/docker/docker/client"
 	"github.com/nats-io/nats.go/jetstream"
 	"github.com/shirou/gopsutil/cpu"
@@ -142,8 +143,31 @@ func pollDocker(ctx context.Context, dockerkv jetstream.KeyValue) toolbelt.CtxEr
 			case <-ctx.Done():
 				defer slog.Info("Stopping docker updates")
 				return
+			case <-time.After(5 * time.Second):
+				slog.Info("docker image tick")
+
+				// images
+				var (
+					images []image.Summary
+				)
+				if images, err = cli.ImageList(context.Background(), image.ListOptions{}); err != nil {
+					slog.Error(err.Error())
+					continue
+				}
+				b, err := json.Marshal(images)
+				if err != nil {
+					slog.Error(err.Error())
+					continue
+				}
+				if _, err := dockerkv.Put(context.Background(), "images", b); err != nil {
+					slog.Error(err.Error())
+
+					continue
+				}
 			case <-time.After(1 * time.Second):
-				slog.Info("docker tick")
+				slog.Info("docker container tick")
+
+				// containers
 				var (
 					containers []types.Container
 					err        error
@@ -162,6 +186,7 @@ func pollDocker(ctx context.Context, dockerkv jetstream.KeyValue) toolbelt.CtxEr
 
 					continue
 				}
+
 			}
 		}
 

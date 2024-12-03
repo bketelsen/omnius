@@ -10,6 +10,7 @@ import (
 	"github.com/delaneyj/toolbelt/embeddednats"
 	"github.com/docker/docker/api/types"
 	containertypes "github.com/docker/docker/api/types/container"
+	"github.com/docker/docker/api/types/image"
 	"github.com/docker/docker/client"
 	"github.com/go-chi/chi/v5"
 	datastar "github.com/starfederation/datastar/code/go/sdk"
@@ -22,13 +23,14 @@ func SetupDockerRoutes(r chi.Router, logger *slog.Logger, cli *client.Client, ns
 		dockerRouter.Get("/", func(w http.ResponseWriter, r *http.Request) {
 			var (
 				containers []types.Container
+				images     []image.Summary
 				err        error
 			)
 			if containers, err = cli.ContainerList(r.Context(), containertypes.ListOptions{}); err != nil {
 				http.Error(w, err.Error(), http.StatusInternalServerError)
 				return
 			}
-			DockerPage(containers).Render(r.Context(), w)
+			DockerPage(containers, images).Render(r.Context(), w)
 		})
 
 		dockerRouter.Get("/api", func(w http.ResponseWriter, r *http.Request) {

@@ -4,20 +4,30 @@ import (
 	"github.com/bketelsen/omnius/web/components"
 	"github.com/bketelsen/omnius/web/layouts"
 	"github.com/docker/docker/api/types"
+	"github.com/docker/docker/api/types/image"
 	datastar "github.com/starfederation/datastar/code/go/sdk"
 )
 
-templ DockerPage(containers []types.Container) {
+templ DockerPage(containers []types.Container, images []image.Summary) {
 	@layouts.Page() {
-		@components.CardGallery() {
-			@DockerOverview(containers)
-		}
+		<div data-on-load="$get('/docker/poll')">
+			@components.CardGallery() {
+				@DockerOverview(containers)
+				@ImageOverview(images)
+			}
+		</div>
 	}
 }
 
 templ DockerOverview(containers []types.Container) {
-	@components.OverviewCard("Docker", "/docker") {
+	@components.OverviewCard("Containers", "/docker") {
 		@DockerContainer(containers)
+	}
+}
+
+templ ImageOverview(images []image.Summary) {
+	@components.OverviewCard("Images", "/docker/images") {
+		@DockerImages(images)
 	}
 }
 
@@ -47,6 +57,37 @@ templ DockerContainer(containers []types.Container) {
 								@pauseButton(container)
 								@startButton(container)
 							</div>
+						</td>
+					</tr>
+				}
+			</tbody>
+		</table>
+	</div>
+}
+
+templ DockerImages(images []image.Summary) {
+	<div id="dockerimages" class="overflow-x-auto">
+		<table class="table">
+			<!-- head -->
+			<thead>
+				<tr>
+					<th></th>
+					<th>ID</th>
+					<th>Image</th>
+					<th>Status</th>
+					<th>Actions</th>
+				</tr>
+			</thead>
+			<tbody>
+				for _, image := range images {
+					<!-- row 1 -->
+					<tr>
+						<th></th>
+						<td>{ image.ID[0:12] }</td>
+						<td></td>
+						<td></td>
+						<td>
+							<div class="join"></div>
 						</td>
 					</tr>
 				}
