@@ -5,6 +5,7 @@ go 1.23.3
 require (
 	github.com/a-h/templ v0.2.793
 	github.com/benbjohnson/hashfs v0.2.2
+	github.com/coreos/go-systemd/v22 v22.5.0
 	github.com/delaneyj/toolbelt v0.3.15
 	github.com/docker/docker v27.3.1+incompatible
 	github.com/go-chi/chi/v5 v5.1.0
@@ -13,6 +14,7 @@ require (
 	github.com/shirou/gopsutil v3.21.11+incompatible
 	github.com/shirou/gopsutil/v4 v4.24.11
 	github.com/starfederation/datastar v0.20.0
+	github.com/zeebo/xxh3 v1.0.2
 )
 
 require (
@@ -35,6 +37,7 @@ require (
 	github.com/go-ole/go-ole v1.2.6 // indirect
 	github.com/go-rod/rod v0.116.2 // indirect
 	github.com/goccy/go-json v0.10.3 // indirect
+	github.com/godbus/dbus/v5 v5.0.4 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/iancoleman/strcase v0.3.0 // indirect
@@ -68,7 +71,6 @@ require (
 	github.com/ysmood/gson v0.7.3 // indirect
 	github.com/ysmood/leakless v0.9.0 // indirect
 	github.com/yusufpapurcu/wmi v1.2.4 // indirect
-	github.com/zeebo/xxh3 v1.0.2 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.57.0 // indirect
 	go.opentelemetry.io/otel v1.32.0 // indirect
 	go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp v1.32.0 // indirect

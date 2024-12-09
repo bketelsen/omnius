@@ -14,6 +14,8 @@ import (
 	"github.com/bketelsen/omnius/web/modules/system"
 	"github.com/bketelsen/omnius/web/modules/system/logs"
 	"github.com/bketelsen/omnius/web/modules/system/networking"
+	"github.com/bketelsen/omnius/web/modules/system/services"
+
 	"github.com/bketelsen/omnius/web/modules/system/storage"
 	"github.com/delaneyj/toolbelt"
 	"github.com/delaneyj/toolbelt/embeddednats"
@@ -51,6 +53,7 @@ func RunBlocking(logger *slog.Logger, client *client.Client, port int) toolbelt.
 		if err := errors.Join(
 			setupHomeRoutes(router, ns),
 			system.SetupSystemRoutes(router, client, ns, kvstore, ctx),
+			services.SetupServicesRoutes(router, client, ns),
 			logs.SetupLogsRoutes(router, client, ns),
 			storage.SetupStorageRoutes(router, client, ns),
 			networking.SetupNetworkingRoutes(router, client, ns),

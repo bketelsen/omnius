@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log/slog"
+	"strings"
 	"time"
 
 	"github.com/bketelsen/omnius/web/stores"
@@ -17,6 +18,7 @@ import (
 	"github.com/nats-io/nats.go/jetstream"
 	"github.com/shirou/gopsutil/cpu"
 	"github.com/shirou/gopsutil/mem"
+	"github.com/zeebo/xxh3"
 )
 
 func poll(ctx context.Context, ns *embeddednats.Server, stores *stores.KVStores) error {
@@ -131,7 +133,6 @@ func pollSystem(ctx context.Context, systemkv jetstream.KeyValue) toolbelt.CtxEr
 }
 
 func pollDocker(ctx context.Context, dockerkv jetstream.KeyValue) toolbelt.CtxErrFunc {
-
 	return func(ctxp context.Context) (err error) {
 		cli, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
 		if err != nil {
@@ -143,27 +144,7 @@ func pollDocker(ctx context.Context, dockerkv jetstream.KeyValue) toolbelt.CtxEr
 			case <-ctx.Done():
 				defer slog.Info("Stopping docker updates")
 				return
-			case <-time.After(5 * time.Second):
-				slog.Info("docker image tick")
 
-				// images
-				var (
-					images []image.Summary
-				)
-				if images, err = cli.ImageList(context.Background(), image.ListOptions{}); err != nil {
-					slog.Error(err.Error())
-					continue
-				}
-				b, err := json.Marshal(images)
-				if err != nil {
-					slog.Error(err.Error())
-					continue
-				}
-				if _, err := dockerkv.Put(context.Background(), "images", b); err != nil {
-					slog.Error(err.Error())
-
-					continue
-				}
 			case <-time.After(1 * time.Second):
 				slog.Info("docker container tick")
 
@@ -181,7 +162,48 @@ func pollDocker(ctx context.Context, dockerkv jetstream.KeyValue) toolbelt.CtxEr
 					slog.Error(err.Error())
 					continue
 				}
-				if _, err := dockerkv.Put(context.Background(), "containers", b); err != nil {
+				// hash the data
+				h := hash(b)
+				// get the current hash
+
+				currentVal, err := dockerkv.Get(context.Background(), "containers")
+				if err != nil {
+					slog.Error(err.Error())
+					if strings.Contains(err.Error(), "not found") {
+						currentVal = nil
+					}
+				}
+				if currentVal != nil {
+					if h != hash(currentVal.Value()) {
+						// update
+						slog.Info("containers different, updating")
+						if _, err := dockerkv.Put(context.Background(), "containers", b); err != nil {
+							slog.Error(err.Error())
+
+						}
+					}
+				} else {
+					// no current value, set it
+					slog.Info("setting containers value")
+					if _, err := dockerkv.Put(context.Background(), "containers", b); err != nil {
+						slog.Error(err.Error())
+						continue
+					}
+				}
+				// images
+				var (
+					images []image.Summary
+				)
+				if images, err = cli.ImageList(context.Background(), image.ListOptions{}); err != nil {
+					slog.Error(err.Error())
+					continue
+				}
+				b, err = json.Marshal(images)
+				if err != nil {
+					slog.Error(err.Error())
+					continue
+				}
+				if _, err := dockerkv.Put(context.Background(), "images", b); err != nil {
 					slog.Error(err.Error())
 
 					continue
@@ -191,4 +213,15 @@ func pollDocker(ctx context.Context, dockerkv jetstream.KeyValue) toolbelt.CtxEr
 		}
 
 	}
+}
+
+func hash(b []byte) uint64 {
+	hasher := xxh3.New()
+	defer hasher.Reset()
+
+	_, err := hasher.Write(b)
+	if err != nil {
+		slog.Error(err.Error())
+	}
+	return hasher.Sum64()
 }
