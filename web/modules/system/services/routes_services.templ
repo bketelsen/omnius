@@ -3,47 +3,76 @@ package services
 import (
 	"github.com/bketelsen/omnius/web/components"
 	"github.com/bketelsen/omnius/web/layouts"
-	"github.com/docker/docker/api/types"
+	"github.com/coreos/go-systemd/v22/dbus"
 	datastar "github.com/starfederation/datastar/code/go/sdk"
+	"strconv"
 )
 
-templ ServicesPage(containers []types.Container) {
+templ ServicesPage(units []dbus.UnitStatus) {
 	@layouts.Page() {
 		@components.CardGallery() {
-			@ServiceOverview(containers)
+			@ServiceDetail(units)
 		}
 	}
 }
 
-templ ServiceOverview(containers []types.Container) {
-	@components.OverviewCard("Service", "/services")
+templ ServiceOverview(units []dbus.UnitStatus) {
+	@components.OverviewCard("Services", "/services") {
+		@ServiceOverviewCard(units)
+	}
 }
 
-templ dockerContainer(containers []types.Container) {
-	<div id="networking" class="overflow-x-auto">
+templ ServiceOverviewCard(units []dbus.UnitStatus) {
+	<div id="serviceoverview">
+		@components.Stats() {
+			@components.Stat("Active Services", strconv.Itoa(len(units)), "")
+		}
+	</div>
+}
+
+templ ServiceDetail(units []dbus.UnitStatus) {
+	@components.DetailCard("Services", "/services") {
+		@ServicesContainer(units)
+	}
+}
+
+templ ServicesContainer(units []dbus.UnitStatus) {
+	<div id="systemservices" class="overflow-x-auto">
+		<div>
+			<select class="select w-full max-w-xs">
+				<option disabled selected>Active State</option>
+				<option>active</option>
+				<option>inactive</option>
+			</select>
+			<select class="select w-full max-w-xs">
+				<option disabled selected>Sub State</option>
+				<option>running</option>
+				<option>stopped</option>
+			</select>
+		</div>
 		<table class="table">
 			<!-- head -->
 			<thead>
 				<tr>
 					<th></th>
-					<th>ID</th>
-					<th>Image</th>
-					<th>Status</th>
+					<th>Name</th>
+					<th>Description</th>
+					<th>State</th>
 					<th>Actions</th>
 				</tr>
 			</thead>
 			<tbody>
-				for _, container := range containers {
+				for _, unit := range units {
 					<!-- row 1 -->
 					<tr>
 						<th></th>
-						<td>{ container.ID[0:12] }</td>
-						<td>{ container.Image }</td>
-						<td>{ container.Status }</td>
+						<td>{ unit.Name }</td>
+						<td>{ unit.Description }</td>
+						<td>{ unit.LoadState }: {  unit.ActiveState }/{ unit.SubState }</td>
 						<td>
 							<div class="join">
-								@pauseButton(container)
-								@startButton(container)
+								@pauseButton(unit)
+								@logsButton(unit)
 							</div>
 						</td>
 					</tr>
@@ -53,14 +82,16 @@ templ dockerContainer(containers []types.Container) {
 	</div>
 }
 
-templ pauseButton(container types.Container) {
-	if container.State == "paused" {
-		<button class="join-item btn btn-xs btn-warning" data-on-click={ datastar.PostSSE("/docker/api/" + container.ID + "/unpause") }>Unpause</button>
-	} else {
-		<button class="join-item btn btn-xs btn-warning " data-on-click={ datastar.PostSSE("/docker/api/" + container.ID + "/pause") }>Pause</button>
-	}
+templ pauseButton(unit dbus.UnitStatus) {
+	// if container.State == "paused" {
+	<button class="join-item btn btn-xs btn-error" data-on-click={ datastar.PostSSE("/system/api/" + unit.Name + "/stop") }>Stop</button>
+	<button class="join-item btn btn-xs btn-warning" data-on-click={ datastar.PostSSE("/system/api/" + unit.Name + "/restart") }>Restart</button>
+	<button class="join-item btn btn-xs btn-secondary" data-on-click={ datastar.PostSSE("/system/api/" + unit.Name + "/info") }>Info</button>
+	// 	} else {
+	// 		<button class="join-item btn btn-xs btn-warning " data-on-click={ datastar.PostSSE("/docker/api/" + unit.Name + "/pause") }>Pause</button>
+	// 	}
 }
 
-templ startButton(container types.Container) {
-	<button class="join-item btn btn-xs btn-error " data-on-click={ datastar.PostSSE("/docker/api/" + container.ID + "/stop") }>Stop</button>
+templ logsButton(unit dbus.UnitStatus) {
+	<button class="join-item btn btn-xs btn-primary " data-on-click={ datastar.PostSSE("/system/api/" + unit.Name + "/logs") }>Logs</button>
 }

@@ -7,6 +7,7 @@ import (
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/image"
 	datastar "github.com/starfederation/datastar/code/go/sdk"
+	"strconv"
 	"strings"
 )
 
@@ -14,7 +15,7 @@ templ DockerPage(containers []types.Container, images []image.Summary) {
 	@layouts.Page() {
 		<div data-on-load="$get('/docker/poll')">
 			@components.CardGallery() {
-				@DockerOverview(containers)
+				@DockerDetail(containers)
 				@ImageOverview(images)
 			}
 		</div>
@@ -22,7 +23,21 @@ templ DockerPage(containers []types.Container, images []image.Summary) {
 }
 
 templ DockerOverview(containers []types.Container) {
-	@components.OverviewCard("Docker Containers", "/docker") {
+	@components.OverviewCard("Docker", "/docker") {
+		@DockerOverviewCard(containers)
+	}
+}
+
+templ DockerOverviewCard(containers []types.Container) {
+	<div id="dockeroverview">
+		@components.Stats() {
+			@components.Stat("Active Containers", strconv.Itoa(len(containers)), "")
+		}
+	</div>
+}
+
+templ DockerDetail(containers []types.Container) {
+	@components.DetailCard("Docker Containers", "/docker") {
 		@DockerContainer(containers)
 	}
 }

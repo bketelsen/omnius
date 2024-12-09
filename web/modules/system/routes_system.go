@@ -8,7 +8,9 @@ import (
 	"time"
 
 	"github.com/bketelsen/omnius/web/modules/containers/docker"
+	"github.com/bketelsen/omnius/web/modules/system/services"
 	"github.com/bketelsen/omnius/web/stores"
+	"github.com/coreos/go-systemd/v22/dbus"
 
 	"github.com/delaneyj/toolbelt/embeddednats"
 	"github.com/docker/docker/api/types"
@@ -72,7 +74,7 @@ func SetupSystemRoutes(r chi.Router, cli *client.Client, ns *embeddednats.Server
 						sse.ConsoleError(err)
 						continue
 					}
-					c := docker.DockerContainer(cc)
+					c := docker.DockerOverviewCard(cc)
 					if err := sse.MergeFragmentTempl(c); err != nil {
 						sse.ConsoleError(err)
 						return
@@ -96,7 +98,19 @@ func SetupSystemRoutes(r chi.Router, cli *client.Client, ns *embeddednats.Server
 							sse.ConsoleError(err)
 							return
 						}
-
+					case "services":
+						//	slog.Info("CPU Update")
+						var v []dbus.UnitStatus
+						if err := json.Unmarshal(entry.Value(), &v); err != nil {
+							slog.Error("Servic Update", "error", err)
+							sse.ConsoleError(err)
+							continue
+						}
+						c := services.ServiceOverviewCard(v)
+						if err := sse.MergeFragmentTempl(c); err != nil {
+							sse.ConsoleError(err)
+							return
+						}
 					case "cpu":
 						//	slog.Info("CPU Update")
 						var v CPUSimple

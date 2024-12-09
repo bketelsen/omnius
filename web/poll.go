@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/bketelsen/omnius/web/stores"
+	"github.com/coreos/go-systemd/v22/dbus"
 	"github.com/delaneyj/toolbelt"
 	"github.com/delaneyj/toolbelt/embeddednats"
 	"github.com/docker/docker/api/types"
@@ -74,7 +75,10 @@ type CPUSimple struct {
 }
 
 func pollSystem(ctx context.Context, systemkv jetstream.KeyValue) toolbelt.CtxErrFunc {
+
 	return func(ctxp context.Context) (err error) {
+		systemdConnection, _ := dbus.NewSystemConnectionContext(context.Background())
+		defer systemdConnection.Close()
 		for {
 			select {
 			case <-ctx.Done():
@@ -121,6 +125,22 @@ func pollSystem(ctx context.Context, systemkv jetstream.KeyValue) toolbelt.CtxEr
 					continue
 				}
 				if _, err := systemkv.Put(context.Background(), "cpu", b); err != nil {
+					slog.Error(err.Error())
+
+					continue
+				}
+
+				// systemd units
+				units, err := systemdConnection.ListUnitsByPatternsContext(context.Background(), []string{"running"}, []string{"*.service"})
+				if err != nil {
+					return fmt.Errorf("error getting systemd services: %w", err)
+				}
+				b, err = json.Marshal(units)
+				if err != nil {
+					slog.Error(err.Error())
+					continue
+				}
+				if _, err := systemkv.Put(context.Background(), "services", b); err != nil {
 					slog.Error(err.Error())
 
 					continue

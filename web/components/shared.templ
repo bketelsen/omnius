@@ -33,7 +33,7 @@ templ OverviewCardAsync(title string, id string, onload string, manage string) {
 }
 
 templ DetailCardAsync(title string, id string, onload string) {
-	<div class="mx-2 my-2 card bg-base-100 max-w-lg shadow-xl">
+	<div class="mx-2 my-2 card bg-base-100 max-w-4xl shadow-xl">
 		<div class="card-body">
 			<h2 class="card-title">{ title }</h2>
 			<div id={ id } data-on-load={ onload }>
@@ -44,7 +44,7 @@ templ DetailCardAsync(title string, id string, onload string) {
 }
 
 templ DetailCard(title string, id string) {
-	<div class="mx-2 my-2 card bg-base-100 max-w-lg shadow-xl">
+	<div class="mx-2 my-2 card bg-base-100 max-w-4xl shadow-xl">
 		<div class="card-body">
 			<h2 class="card-title">{ title }</h2>
 			{ children... }

@@ -53,7 +53,7 @@ func RunBlocking(logger *slog.Logger, client *client.Client, port int) toolbelt.
 		if err := errors.Join(
 			setupHomeRoutes(router, ns),
 			system.SetupSystemRoutes(router, client, ns, kvstore, ctx),
-			services.SetupServicesRoutes(router, client, ns),
+			services.SetupServicesRoutes(router, client, ns, kvstore, ctx),
 			logs.SetupLogsRoutes(router, client, ns),
 			storage.SetupStorageRoutes(router, client, ns),
 			networking.SetupNetworkingRoutes(router, client, ns),

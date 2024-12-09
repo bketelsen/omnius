@@ -8,7 +8,9 @@ import (
 	"github.com/bketelsen/omnius/web/modules/containers/incus"
 	"github.com/bketelsen/omnius/web/modules/system/logs"
 	"github.com/bketelsen/omnius/web/modules/system/networking"
+	"github.com/bketelsen/omnius/web/modules/system/services"
 	"github.com/bketelsen/omnius/web/modules/system/storage"
+	"github.com/coreos/go-systemd/v22/dbus"
 	"github.com/docker/docker/api/types"
 	"github.com/shirou/gopsutil/v4/mem"
 	"strconv"
@@ -21,6 +23,7 @@ templ SystemPage(c CPUSimple, v *mem.VirtualMemoryStat, containers []types.Conta
 				@CPUDetail(c)
 				@MemoryDetail(v)
 				@logs.LogsOverview([]types.Container{})
+				@services.ServiceOverview([]dbus.UnitStatus{})
 				@storage.StorageOverview([]types.Container{})
 				@networking.NetworkOverview([]types.Container{})
 				@docker.DockerOverview(containers)
