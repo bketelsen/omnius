@@ -68,7 +68,7 @@ func RunBlocking(logger *slog.Logger, client *client.Client, port int) toolbelt.
 			return fmt.Errorf("error polling: %w", err)
 		}
 		srv := &http.Server{
-			Addr:    fmt.Sprintf(":%d", port),
+			Addr:    fmt.Sprintf("0.0.0.0:%d", port),
 			Handler: router,
 		}
 		go func() {

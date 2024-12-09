@@ -1,6 +1,6 @@
 package layouts
 
-import ()
+import "os"
 
 templ Page() {
 	<!DOCTYPE html>
@@ -10,7 +10,7 @@ templ Page() {
 			<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 			<link href="/static/site.css" rel="stylesheet" type="text/css"/>
 			<script type="module" src="https://cdn.jsdelivr.net/gh/starfederation/datastar/bundles/datastar.js"></script>
-			<title>Omnius</title>
+			<title>Omnius @ { hostname() }</title>
 		</head>
 		<body
 			data-on-pageshow.window="evt?.persisted && window.location.reload()"
@@ -40,7 +40,7 @@ templ Page() {
 								</label>
 							</div>
 							<a href="/" class="btn btn-ghost font-bold text-xl">
-								<span class="text-accent">Omnius</span>
+								<span class="text-accent">Omnius @ { hostname() } </span>
 							</a>
 						</div>
 						<main class="flex-1">
@@ -80,4 +80,12 @@ templ Page() {
 			</div>
 		</body>
 	</html>
+}
+
+func hostname() string {
+	hostname, err := os.Hostname()
+	if err != nil {
+		return "unknown"
+	}
+	return hostname
 }
