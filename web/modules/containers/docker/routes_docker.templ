@@ -6,6 +6,7 @@ import (
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/image"
 	datastar "github.com/starfederation/datastar/code/go/sdk"
+	"strings"
 )
 
 templ DockerPage(containers []types.Container, images []image.Summary) {
@@ -41,6 +42,7 @@ templ DockerContainer(containers []types.Container) {
 					<th>ID</th>
 					<th>Image</th>
 					<th>Status</th>
+					<th>Names</th>
 					<th>Actions</th>
 				</tr>
 			</thead>
@@ -52,6 +54,9 @@ templ DockerContainer(containers []types.Container) {
 						<td>{ container.ID[0:12] }</td>
 						<td>{ container.Image }</td>
 						<td>{ container.Status }</td>
+						<td>
+							{ names(container.Names) }
+						</td>
 						<td>
 							<div class="join">
 								@pauseButton(container)
@@ -106,4 +111,14 @@ templ pauseButton(container types.Container) {
 
 templ startButton(container types.Container) {
 	<button class="join-item btn btn-xs btn-error " data-on-click={ datastar.PostSSE("/docker/api/" + container.ID + "/stop") }>Stop</button>
+}
+
+func names(ctnames []string) string {
+
+	stripped := []string{}
+	for _, n := range ctnames {
+		strippedName := strings.TrimPrefix(n, "/")
+		stripped = append(stripped, strippedName)
+	}
+	return strings.Join(stripped, ", ")
 }
