@@ -23,6 +23,7 @@ import (
 const (
 	BucketName        = "docker"
 	BucketDescription = "Docker Container and Image Information"
+	Interval          = 1 * time.Second
 )
 
 // ensure we implement the Module interface
@@ -59,7 +60,7 @@ func (d *DockerModule) Poll() toolbelt.CtxErrFunc {
 				defer d.Logger.Info("Stopping docker updates")
 				return
 
-			case <-time.After(1 * time.Second):
+			case <-time.After(Interval):
 				d.Logger.Info("tick")
 
 				// containers
