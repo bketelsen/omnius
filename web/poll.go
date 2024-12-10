@@ -51,7 +51,7 @@ func poll(ctx context.Context, ns *embeddednats.Server, stores *stores.KVStores,
 
 	egctx := toolbelt.NewErrGroupSharedCtx(ctx,
 		//	pollDocker(ctx, stores.DockerStore),
-		dm.Poll(),
+		//	dm.Poll(),
 		pollSystem(ctx, stores.SystemStore),
 	)
 	return egctx.Wait()

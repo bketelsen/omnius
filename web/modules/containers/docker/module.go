@@ -10,7 +10,6 @@ import (
 
 	"github.com/bketelsen/omnius/web/modules"
 	"github.com/bketelsen/omnius/web/stores"
-	"github.com/delaneyj/toolbelt"
 	"github.com/docker/docker/api/types"
 	containertypes "github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/image"
@@ -26,107 +25,119 @@ const (
 	Interval          = 1 * time.Second
 )
 
+func init() {
+
+	modules.Register("docker", &DockerModule{})
+
+}
+
 // ensure we implement the Module interface
 var _ modules.Module = &DockerModule{}
 
 type DockerModule struct {
 	modules.BaseModule
-	client *client.Client
+	client    *client.Client
+	hasDocker bool
 }
 
-func NewDockerModule(logger *slog.Logger, stores *stores.KVStores, cli *client.Client, nc *nats.Conn, js jetstream.JetStream) (*DockerModule, error) {
+func (d *DockerModule) Init(logger *slog.Logger, stores *stores.KVStores, nc *nats.Conn, js jetstream.JetStream) error {
 
-	dm := &DockerModule{
-		client: cli,
-		BaseModule: modules.BaseModule{
-			Logger:     logger.With("module", "docker"),
-			NatsClient: nc,
-			JetStream:  js,
-		},
+	d.Logger = logger.With("module", "docker")
+	d.NatsClient = nc
+	d.JetStream = js
+
+	cli, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
+	if err != nil {
+		d.hasDocker = false
+	} else {
+		d.client = cli
+		d.hasDocker = true
+		d.CreateStore(stores)
+
 	}
-	dm.CreateStore(stores)
-	return dm, nil
+	return nil
 }
 
-func (d *DockerModule) Poll() toolbelt.CtxErrFunc {
+func (d *DockerModule) Enabled() bool {
+	return d.hasDocker
+}
 
-	return func(ctxp context.Context) (err error) {
+func (d *DockerModule) Poll(ctx context.Context) {
 
-		d.Logger.Info("Polling Docker Module")
+	d.Logger.Info("Polling Docker Module")
 
-		for {
-			select {
-			case <-ctxp.Done():
-				defer d.Logger.Info("Stopping docker updates")
-				return
+	for {
+		select {
+		case <-ctx.Done():
+			defer d.Logger.Info("Stopping docker updates")
+			return
 
-			case <-time.After(Interval):
-				d.Logger.Info("tick")
+		case <-time.After(Interval):
+			d.Logger.Info("tick")
 
-				// containers
-				var (
-					containers []types.Container
-					err        error
-				)
-				if containers, err = d.client.ContainerList(context.Background(), containertypes.ListOptions{}); err != nil {
-					d.Logger.Error(err.Error())
-					continue
+			// containers
+			var (
+				containers []types.Container
+				err        error
+			)
+			if containers, err = d.client.ContainerList(context.Background(), containertypes.ListOptions{}); err != nil {
+				d.Logger.Error(err.Error())
+				continue
+			}
+			b, err := json.Marshal(containers)
+			if err != nil {
+				d.Logger.Error(err.Error())
+				continue
+			}
+			// hash the data
+			h := hash(b)
+			// get the current hash
+
+			currentVal, err := d.Store.Get(context.Background(), "containers")
+			if err != nil {
+				d.Logger.Error(err.Error())
+				if strings.Contains(err.Error(), "not found") {
+					currentVal = nil
 				}
-				b, err := json.Marshal(containers)
-				if err != nil {
-					d.Logger.Error(err.Error())
-					continue
-				}
-				// hash the data
-				h := hash(b)
-				// get the current hash
-
-				currentVal, err := d.Store.Get(context.Background(), "containers")
-				if err != nil {
-					d.Logger.Error(err.Error())
-					if strings.Contains(err.Error(), "not found") {
-						currentVal = nil
-					}
-				}
-				if currentVal != nil {
-					if h != hash(currentVal.Value()) {
-						// update
-						d.Logger.Info("containers different, updating")
-						if _, err := d.Store.Put(context.Background(), "containers", b); err != nil {
-							slog.Error(err.Error())
-
-						}
-					}
-				} else {
-					// no current value, set it
-					d.Logger.Info("setting containers value")
+			}
+			if currentVal != nil {
+				if h != hash(currentVal.Value()) {
+					// update
+					d.Logger.Info("containers different, updating")
 					if _, err := d.Store.Put(context.Background(), "containers", b); err != nil {
 						slog.Error(err.Error())
-						continue
+
 					}
 				}
-				// images
-				var (
-					images []image.Summary
-				)
-				if images, err = d.client.ImageList(context.Background(), image.ListOptions{}); err != nil {
-					d.Logger.Error(err.Error())
+			} else {
+				// no current value, set it
+				d.Logger.Info("setting containers value")
+				if _, err := d.Store.Put(context.Background(), "containers", b); err != nil {
+					slog.Error(err.Error())
 					continue
 				}
-				b, err = json.Marshal(images)
-				if err != nil {
-					d.Logger.Error(err.Error())
-					continue
-				}
-				if _, err := d.Store.Put(context.Background(), "images", b); err != nil {
-					d.Logger.Error(err.Error())
-
-					continue
-				}
-
 			}
+			// images
+			var (
+				images []image.Summary
+			)
+			if images, err = d.client.ImageList(context.Background(), image.ListOptions{}); err != nil {
+				d.Logger.Error(err.Error())
+				continue
+			}
+			b, err = json.Marshal(images)
+			if err != nil {
+				d.Logger.Error(err.Error())
+				continue
+			}
+			if _, err := d.Store.Put(context.Background(), "images", b); err != nil {
+				d.Logger.Error(err.Error())
+				continue
+			}
+
 		}
 	}
+
 }
 
 func (d *DockerModule) CreateStore(stores *stores.KVStores) error {
@@ -140,6 +151,8 @@ func (d *DockerModule) CreateStore(stores *stores.KVStores) error {
 	})
 
 	if err != nil {
+		d.hasDocker = false
+		d.Logger.Error(err.Error())
 		return fmt.Errorf("error creating key value: %w", err)
 	}
 	stores.DockerStore = dockerkv

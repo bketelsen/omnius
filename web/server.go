@@ -7,33 +7,39 @@ import (
 	"log/slog"
 	"net/http"
 
+	"github.com/bketelsen/omnius/web/modules"
 	"github.com/bketelsen/omnius/web/stores"
 
-	"github.com/bketelsen/omnius/web/modules/containers/docker"
-	"github.com/bketelsen/omnius/web/modules/containers/incus"
-	"github.com/bketelsen/omnius/web/modules/system"
-	"github.com/bketelsen/omnius/web/modules/system/logs"
-	"github.com/bketelsen/omnius/web/modules/system/networking"
-	"github.com/bketelsen/omnius/web/modules/system/services"
-
-	"github.com/bketelsen/omnius/web/modules/system/storage"
 	"github.com/delaneyj/toolbelt"
 	"github.com/delaneyj/toolbelt/embeddednats"
 	natsserver "github.com/nats-io/nats-server/v2/server"
 	"github.com/nats-io/nats.go/jetstream"
 
-	"github.com/docker/docker/client"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 )
 
-func RunBlocking(logger *slog.Logger, client *client.Client, port int) toolbelt.CtxErrFunc {
-	logger.Info(fmt.Sprintf("Starting Server @:%d", port))
+type Server struct {
+	Port   int
+	Logger *slog.Logger
+}
+
+func NewServer(port int, logger *slog.Logger) *Server {
+	return &Server{
+		Port:   port,
+		Logger: logger,
+	}
+}
+
+func (s *Server) RunBlocking() toolbelt.CtxErrFunc {
+	s.Logger.Info(fmt.Sprintf("Starting Server @:%d", s.Port))
+
 	return func(ctx context.Context) (err error) {
 
 		router := chi.NewRouter()
 		router.Use(middleware.Recoverer)
-		router.Handle("/static/*", http.StripPrefix("/static/", static(logger)))
+		router.Handle("/static/*", http.StripPrefix("/static/", static(s.Logger)))
+
 		natsPort, err := toolbelt.FreePort()
 		if err != nil {
 			return fmt.Errorf("error getting free port: %w", err)
@@ -49,6 +55,7 @@ func RunBlocking(logger *slog.Logger, client *client.Client, port int) toolbelt.
 		}
 
 		ns.WaitForServer()
+
 		kvstore := &stores.KVStores{}
 		natsCon, err := ns.Client()
 		if err != nil {
@@ -58,39 +65,51 @@ func RunBlocking(logger *slog.Logger, client *client.Client, port int) toolbelt.
 		if err != nil {
 			return fmt.Errorf("error creating jetstream client: %w", err)
 		}
-		dm, err := docker.NewDockerModule(logger, kvstore, client, natsCon, js)
-		if err != nil {
-			return fmt.Errorf("error creating docker module: %w", err)
+
+		ctx, cancel := context.WithCancel(ctx)
+
+		for k, v := range modules.AvailableModules {
+			fmt.Println(k, v)
+			s.Logger.Info("Creating module", slog.String("module", k))
+			err := v.Init(s.Logger, kvstore, natsCon, js)
+			if err != nil {
+				s.Logger.Error("error creating module", slog.String("module", k), slog.String("error", err.Error()))
+				continue
+			}
+			err = v.CreateStore(kvstore)
+			if err != nil {
+				s.Logger.Error("error creating store", slog.String("module", k), slog.String("error", err.Error()))
+				continue
+			}
+			if v.Enabled() {
+				v.SetupRoutes(router, ctx)
+				go v.Poll(ctx)
+			}
 		}
-		err = dm.CreateStore(kvstore)
-		if err != nil {
-			return fmt.Errorf("error creating jetstream client: %w", err)
-		}
+
 		if err := errors.Join(
 			setupHomeRoutes(router, ns),
-			system.SetupSystemRoutes(router, client, ns, kvstore, ctx),
-			services.SetupServicesRoutes(router, client, ns, kvstore, ctx),
-			logs.SetupLogsRoutes(router, client, ns),
-			storage.SetupStorageRoutes(router, client, ns),
-			networking.SetupNetworkingRoutes(router, client, ns),
-			dm.SetupRoutes(router, ctx),
-			//docker.SetupDockerRoutes(router, logger, client, ns, kvstore, ctx),
-			incus.SetupIncusRoutes(router, client, ns),
+			//	system.SetupSystemRoutes(router, ns, kvstore, ctx),
+			//	services.SetupServicesRoutes(router, ns, kvstore, ctx),
+			//	logs.SetupLogsRoutes(router, ns),
+			//	storage.SetupStorageRoutes(router, ns),
+			//	networking.SetupNetworkingRoutes(router, ns),
+			//	dm.SetupRoutes(router, ctx),
+			//  docker.SetupDockerRoutes(router, logger, client, ns, kvstore, ctx),
+			//	incus.SetupIncusRoutes(router, ns),
 		); err != nil {
+			cancel()
 			return fmt.Errorf("error setting up routes: %w", err)
 		}
 
-		go poll(ctx, ns, kvstore, dm)
-		if err != nil {
-			return fmt.Errorf("error polling: %w", err)
-		}
 		srv := &http.Server{
-			Addr:    fmt.Sprintf("0.0.0.0:%d", port),
+			Addr:    fmt.Sprintf("0.0.0.0:%d", s.Port),
 			Handler: router,
 		}
 		go func() {
 			<-ctx.Done()
-			defer logger.Info("Stopping Server")
+			cancel()
+			defer s.Logger.Info("Stopping Server")
 
 			srv.Shutdown(context.Background())
 		}()
