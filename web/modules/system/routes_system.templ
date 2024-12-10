@@ -24,7 +24,7 @@ templ SystemPage(groups []*layouts.SidebarGroup, c CPUSimple, v *mem.VirtualMemo
 				@MemoryDetail(v)
 				@logs.LogsOverview([]types.Container{})
 				@services.ServiceOverview([]dbus.UnitStatus{})
-				@storage.StorageOverview([]types.Container{})
+				@storage.StorageOverview()
 				@networking.NetworkOverview([]types.Container{})
 				@docker.DockerOverview(containers)
 				@incus.IncusOverview([]types.Container{})

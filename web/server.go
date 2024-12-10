@@ -14,6 +14,7 @@ import (
 	// register modules
 	_ "github.com/bketelsen/omnius/web/modules/containers/docker"
 	_ "github.com/bketelsen/omnius/web/modules/system"
+	_ "github.com/bketelsen/omnius/web/modules/system/storage"
 
 	"github.com/bketelsen/omnius/web/stores"
 
@@ -38,8 +39,8 @@ func NewServer(port int, logger *slog.Logger) *Server {
 		Logger: logger,
 		Categories: []*layouts.SidebarGroup{
 			{
-				ID:    "system",
-				Label: "SYSTEM",
+				ID:    "omnius",
+				Label: "OMNIUS",
 			},
 		},
 	}
@@ -87,27 +88,29 @@ func (s *Server) RunBlocking() toolbelt.CtxErrFunc {
 
 			for _, c := range s.Categories {
 				if c.ID == v.Group() {
-					s.Logger.Info("found", "category", v.Group())
+					s.Logger.Info("found", "category", v.Group(), "enabled", v.Enabled())
 					found = true
 					c.Links = append(c.Links, &layouts.SidebarLink{
-						ID:    k,
-						URL:   templ.SafeURL(fmt.Sprintf("/%s", k)),
-						Label: strings.ToUpper(k),
+						ID:         k,
+						URL:        templ.SafeURL(fmt.Sprintf("/%s", k)),
+						Label:      strings.ToUpper(k),
+						IsDisabled: false,
 					})
 					break
 				}
 
 			}
 			if !found {
-				s.Logger.Info("not found", "category", v.Group())
+				s.Logger.Info("not found", "category", v.Group(), "enabled", v.Enabled())
 				s.Categories = append(s.Categories, &layouts.SidebarGroup{
 					ID:    v.Group(),
 					Label: strings.ToUpper(v.Group()),
 					Links: []*layouts.SidebarLink{
 						{
-							ID:    k,
-							URL:   templ.SafeURL(fmt.Sprintf("/%s", k)),
-							Label: strings.ToUpper(k),
+							ID:         k,
+							URL:        templ.SafeURL(fmt.Sprintf("/%s", k)),
+							Label:      strings.ToUpper(k),
+							IsDisabled: false,
 						},
 					},
 				})

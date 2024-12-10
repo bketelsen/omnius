@@ -71,9 +71,13 @@ templ Drawer(groups []*SidebarGroup) {
 				<li class="menu-title">{ grp.Label }</li>
 				for _, link := range grp.Links {
 					<li>
-						<a href={ link.URL }>
-							{ link.Label }
-						</a>
+						if link.IsDisabled {
+							<div class="opacity-25">{ link.Label }</div>
+						} else {
+							<a href={ link.URL }>
+								{ link.Label }
+							</a>
+						}
 					</li>
 				}
 			}

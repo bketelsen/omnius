@@ -47,8 +47,6 @@ func SetupServicesRoutes(r chi.Router, cli *client.Client, ns *embeddednats.Serv
 			}
 			defer syswatcher.Stop()
 
-			slog.Info("Start Polling System")
-
 			for {
 				select {
 				case <-ctx.Done():

@@ -2,6 +2,7 @@ package docker
 
 import (
 	"context"
+	"encoding/json"
 	"net/http"
 	"time"
 
@@ -32,39 +33,36 @@ func (dm *DockerModule) SetupRoutes(r chi.Router, sidebarGroups []*layouts.Sideb
 		})
 
 		dockerRouter.Get("/api", func(w http.ResponseWriter, r *http.Request) {
-			var (
-				containers []types.Container
-				err        error
-			)
-			if containers, err = dm.client.ContainerList(r.Context(), containertypes.ListOptions{}); err != nil {
+
+			sse := datastar.NewSSE(w, r)
+			dockerwatcher, err := dm.Stores.DockerStore.Watch(ctx, "containers")
+			if err != nil {
 				http.Error(w, err.Error(), http.StatusInternalServerError)
 				return
 			}
-			sse := datastar.NewSSE(w, r)
-			// do it quick to avoid page delay
-			c := DockerContainer(containers)
+			defer dockerwatcher.Stop()
 
-			if err := sse.MergeFragmentTempl(c); err != nil {
-				sse.ConsoleError(err)
-				return
-			}
-			ctx := r.Context()
-			// now loop
 			for {
 				select {
 				case <-ctx.Done():
 					return
-				case <-time.After(1 * time.Second):
-					if containers, err = dm.client.ContainerList(r.Context(), containertypes.ListOptions{}); err != nil {
-						http.Error(w, err.Error(), http.StatusInternalServerError)
-						return
+				case entry := <-dockerwatcher.Updates():
+					//	slog.Info("Docker Update", "entry", entry)
+					if entry == nil {
+						continue
 					}
-					c := DockerContainer(containers)
-
+					var cc []types.Container
+					if err := json.Unmarshal(entry.Value(), &cc); err != nil {
+						dm.Logger.Error("Docker Update", "error", err)
+						sse.ConsoleError(err)
+						continue
+					}
+					c := DockerOverviewCard(cc)
 					if err := sse.MergeFragmentTempl(c); err != nil {
 						sse.ConsoleError(err)
 						return
 					}
+
 				}
 			}
 

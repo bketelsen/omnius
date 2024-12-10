@@ -54,7 +54,6 @@ func (dm *SystemModule) SetupRoutes(r chi.Router, sidebarGroups []*layouts.Sideb
 				return
 			}
 			defer dockerwatcher.Stop()
-			slog.Info("Start Polling System")
 
 			for {
 				select {
