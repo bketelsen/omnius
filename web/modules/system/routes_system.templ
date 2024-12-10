@@ -27,7 +27,7 @@ templ SystemPage(groups []*layouts.SidebarGroup, c CPUSimple, v *mem.VirtualMemo
 				@storage.StorageOverview()
 				@networking.NetworkOverview([]types.Container{})
 				@docker.DockerOverview(containers)
-				@incus.IncusOverview([]types.Container{})
+				@incus.IncusOverview()
 			}
 		</div>
 	}

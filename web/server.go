@@ -13,6 +13,8 @@ import (
 
 	// register modules
 	_ "github.com/bketelsen/omnius/web/modules/containers/docker"
+	_ "github.com/bketelsen/omnius/web/modules/containers/incus"
+
 	_ "github.com/bketelsen/omnius/web/modules/system"
 	_ "github.com/bketelsen/omnius/web/modules/system/storage"
 

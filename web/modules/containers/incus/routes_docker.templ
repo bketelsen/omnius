@@ -1,54 +1,52 @@
-package docker
+package incus
 
 import (
 	"fmt"
 	"github.com/bketelsen/omnius/web/components"
 	"github.com/bketelsen/omnius/web/layouts"
 	"github.com/docker/docker/api/types"
-	"github.com/docker/docker/api/types/image"
 	datastar "github.com/starfederation/datastar/code/go/sdk"
-	"strconv"
 	"strings"
 )
 
-templ DockerPage(sidebarGroups []*layouts.SidebarGroup, containers []types.Container, images []image.Summary) {
+templ IncusPage(sidebarGroups []*layouts.SidebarGroup) {
 	@layouts.Page(sidebarGroups) {
-		<div data-on-load="$get('/docker/poll')">
+		<div data-on-load="$get('/incus/poll')">
 			@components.CardGallery() {
-				@DockerDetail(containers)
-				@ImageOverview(images)
+				@IncusDetail()
+				@ImageOverview()
 			}
 		</div>
 	}
 }
 
-templ DockerOverview(containers []types.Container) {
-	@components.OverviewCard("Docker", "/docker") {
-		@DockerOverviewCard(containers)
+templ IncusOverview() {
+	@components.OverviewCard("Incus", "/incus") {
+		@IncusOverviewCard()
 	}
 }
 
-templ DockerOverviewCard(containers []types.Container) {
-	<div id="dockeroverview">
+templ IncusOverviewCard() {
+	<div id="incusoverview">
 		@components.Stats() {
-			@components.Stat("Active Containers", strconv.Itoa(len(containers)), "")
+			@components.Stat("Active Containers", "5", "")
 		}
 	</div>
 }
 
-templ DockerDetail(containers []types.Container) {
-	@components.DetailCard("Docker Containers", "/docker") {
-		@DockerContainer(containers)
+templ IncusDetail() {
+	@components.DetailCard("Incus Instances", "/incus") {
+		@IncusContainer()
 	}
 }
 
-templ ImageOverview(images []image.Summary) {
-	@components.DetailCard("Docker Images", "/docker/images") {
-		@DockerImages(images)
+templ ImageOverview() {
+	@components.DetailCard("Incus Images", "/incus/images") {
+		@IncusImages()
 	}
 }
 
-templ DockerContainer(containers []types.Container) {
+templ IncusContainer() {
 	<div id="dockercontainers" class="overflow-x-auto">
 		<table class="table">
 			<!-- head -->
@@ -63,35 +61,35 @@ templ DockerContainer(containers []types.Container) {
 					<th>Actions</th>
 				</tr>
 			</thead>
-			<tbody>
-				for _, container := range containers {
-					<!-- row 1 -->
-					<tr>
-						<th></th>
-						<td>{ container.ID[0:12] }</td>
-						<td>{ container.Image }</td>
-						<td>{ container.Status }</td>
-						<td>
-							{ names(container.Names) }
-						</td>
-						<td>
-							{ ports(container.Ports) }
-						</td>
-						<td>
-							<div class="join">
-								@pauseButton(container)
-								@startButton(container)
-							</div>
-						</td>
-					</tr>
-				}
-			</tbody>
+			// <tbody>
+			// 	for _, container := range containers {
+			// 		<!-- row 1 -->
+			// 		<tr>
+			// 			<th></th>
+			// 			<td>{ container.ID[0:12] }</td>
+			// 			<td>{ container.Image }</td>
+			// 			<td>{ container.Status }</td>
+			// 			<td>
+			// 				{ names(container.Names) }
+			// 			</td>
+			// 			<td>
+			// 				{ ports(container.Ports) }
+			// 			</td>
+			// 			<td>
+			// 				<div class="join">
+			// 					@pauseButton(container)
+			// 					@startButton(container)
+			// 				</div>
+			// 			</td>
+			// 		</tr>
+			// 	}
+			// </tbody>
 		</table>
 	</div>
 }
 
-templ DockerImages(images []image.Summary) {
-	<div id="dockerimages" class="overflow-x-auto">
+templ IncusImages() {
+	<div id="incusimages" class="overflow-x-auto">
 		<table class="table">
 			<!-- head -->
 			<thead>
@@ -103,20 +101,6 @@ templ DockerImages(images []image.Summary) {
 					<th>Actions</th>
 				</tr>
 			</thead>
-			<tbody>
-				for _, image := range images {
-					<!-- row 1 -->
-					<tr>
-						<th></th>
-						<td>{ image.ID[0:12] }</td>
-						<td></td>
-						<td></td>
-						<td>
-							<div class="join"></div>
-						</td>
-					</tr>
-				}
-			</tbody>
 		</table>
 	</div>
 }
