@@ -13,6 +13,7 @@ import (
 )
 
 func (dm *DockerModule) SetupRoutes(r chi.Router, ctx context.Context) error {
+	dm.Logger.Info("Setting up Docker Routes")
 
 	r.Route("/docker", func(dockerRouter chi.Router) {
 

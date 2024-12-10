@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"log/slog"
-	"strings"
 	"time"
 
 	"github.com/bketelsen/omnius/web/modules/containers/docker"
@@ -14,10 +13,6 @@ import (
 	"github.com/coreos/go-systemd/v22/dbus"
 	"github.com/delaneyj/toolbelt"
 	"github.com/delaneyj/toolbelt/embeddednats"
-	"github.com/docker/docker/api/types"
-	containertypes "github.com/docker/docker/api/types/container"
-	"github.com/docker/docker/api/types/image"
-	"github.com/docker/docker/client"
 	"github.com/nats-io/nats.go/jetstream"
 	"github.com/shirou/gopsutil/cpu"
 	"github.com/shirou/gopsutil/mem"
@@ -142,88 +137,88 @@ func pollSystem(ctx context.Context, systemkv jetstream.KeyValue) toolbelt.CtxEr
 	}
 }
 
-func pollDocker(ctx context.Context, dockerkv jetstream.KeyValue) toolbelt.CtxErrFunc {
-	return func(ctxp context.Context) (err error) {
-		cli, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
-		if err != nil {
-			return fmt.Errorf("error creating docker connection: %w", err)
-		}
-		defer cli.Close()
-		for {
-			select {
-			case <-ctx.Done():
-				defer slog.Info("Stopping docker updates")
-				return
+// func pollDocker(ctx context.Context, dockerkv jetstream.KeyValue) toolbelt.CtxErrFunc {
+// 	return func(ctxp context.Context) (err error) {
+// 		cli, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
+// 		if err != nil {
+// 			return fmt.Errorf("error creating docker connection: %w", err)
+// 		}
+// 		defer cli.Close()
+// 		for {
+// 			select {
+// 			case <-ctx.Done():
+// 				defer slog.Info("Stopping docker updates")
+// 				return
 
-			case <-time.After(1 * time.Second):
-				slog.Info("docker container tick")
+// 			case <-time.After(1 * time.Second):
+// 				slog.Info("docker container tick")
 
-				// containers
-				var (
-					containers []types.Container
-					err        error
-				)
-				if containers, err = cli.ContainerList(context.Background(), containertypes.ListOptions{}); err != nil {
-					slog.Error(err.Error())
-					continue
-				}
-				b, err := json.Marshal(containers)
-				if err != nil {
-					slog.Error(err.Error())
-					continue
-				}
-				// hash the data
-				h := hash(b)
-				// get the current hash
+// 				// containers
+// 				var (
+// 					containers []types.Container
+// 					err        error
+// 				)
+// 				if containers, err = cli.ContainerList(context.Background(), containertypes.ListOptions{}); err != nil {
+// 					slog.Error(err.Error())
+// 					continue
+// 				}
+// 				b, err := json.Marshal(containers)
+// 				if err != nil {
+// 					slog.Error(err.Error())
+// 					continue
+// 				}
+// 				// hash the data
+// 				h := hash(b)
+// 				// get the current hash
 
-				currentVal, err := dockerkv.Get(context.Background(), "containers")
-				if err != nil {
-					slog.Error(err.Error())
-					if strings.Contains(err.Error(), "not found") {
-						currentVal = nil
-					}
-				}
-				if currentVal != nil {
-					if h != hash(currentVal.Value()) {
-						// update
-						slog.Info("containers different, updating")
-						if _, err := dockerkv.Put(context.Background(), "containers", b); err != nil {
-							slog.Error(err.Error())
+// 				currentVal, err := dockerkv.Get(context.Background(), "containers")
+// 				if err != nil {
+// 					slog.Error(err.Error())
+// 					if strings.Contains(err.Error(), "not found") {
+// 						currentVal = nil
+// 					}
+// 				}
+// 				if currentVal != nil {
+// 					if h != hash(currentVal.Value()) {
+// 						// update
+// 						slog.Info("containers different, updating")
+// 						if _, err := dockerkv.Put(context.Background(), "containers", b); err != nil {
+// 							slog.Error(err.Error())
 
-						}
-					}
-				} else {
-					// no current value, set it
-					slog.Info("setting containers value")
-					if _, err := dockerkv.Put(context.Background(), "containers", b); err != nil {
-						slog.Error(err.Error())
-						continue
-					}
-				}
-				// images
-				var (
-					images []image.Summary
-				)
-				if images, err = cli.ImageList(context.Background(), image.ListOptions{}); err != nil {
-					slog.Error(err.Error())
-					continue
-				}
-				b, err = json.Marshal(images)
-				if err != nil {
-					slog.Error(err.Error())
-					continue
-				}
-				if _, err := dockerkv.Put(context.Background(), "images", b); err != nil {
-					slog.Error(err.Error())
+// 						}
+// 					}
+// 				} else {
+// 					// no current value, set it
+// 					slog.Info("setting containers value")
+// 					if _, err := dockerkv.Put(context.Background(), "containers", b); err != nil {
+// 						slog.Error(err.Error())
+// 						continue
+// 					}
+// 				}
+// 				// images
+// 				var (
+// 					images []image.Summary
+// 				)
+// 				if images, err = cli.ImageList(context.Background(), image.ListOptions{}); err != nil {
+// 					slog.Error(err.Error())
+// 					continue
+// 				}
+// 				b, err = json.Marshal(images)
+// 				if err != nil {
+// 					slog.Error(err.Error())
+// 					continue
+// 				}
+// 				if _, err := dockerkv.Put(context.Background(), "images", b); err != nil {
+// 					slog.Error(err.Error())
 
-					continue
-				}
+// 					continue
+// 				}
 
-			}
-		}
+// 			}
+// 		}
 
-	}
-}
+// 	}
+// }
 
 func hash(b []byte) uint64 {
 	hasher := xxh3.New()

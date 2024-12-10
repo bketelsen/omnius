@@ -13,14 +13,15 @@ import (
 )
 
 const (
+	ModuleName        = "docker"
 	BucketName        = "docker"
 	BucketDescription = "Docker Container and Image Information"
 	Interval          = 1 * time.Second
 )
 
 func init() {
-
-	modules.Register("docker", &DockerModule{})
+	// automatically register this module as available to initialize
+	modules.Register(ModuleName, &DockerModule{})
 
 }
 
@@ -35,9 +36,10 @@ type DockerModule struct {
 
 func (d *DockerModule) Init(logger *slog.Logger, stores *stores.KVStores, nc *nats.Conn, js jetstream.JetStream) error {
 
-	d.Logger = logger.With("module", "docker")
+	d.Logger = logger.With("module", ModuleName)
 	d.NatsClient = nc
 	d.JetStream = js
+	d.Stores = stores
 
 	cli, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
 	if err != nil {

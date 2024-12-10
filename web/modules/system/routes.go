@@ -9,19 +9,15 @@ import (
 
 	"github.com/bketelsen/omnius/web/modules/containers/docker"
 	"github.com/bketelsen/omnius/web/modules/system/services"
-	"github.com/bketelsen/omnius/web/stores"
 	"github.com/coreos/go-systemd/v22/dbus"
-
-	"github.com/delaneyj/toolbelt/embeddednats"
 	"github.com/docker/docker/api/types"
-	"github.com/docker/docker/client"
 	"github.com/go-chi/chi/v5"
 	"github.com/shirou/gopsutil/v4/mem"
 	datastar "github.com/starfederation/datastar/code/go/sdk"
 )
 
-func SetupSystemRoutes(r chi.Router, cli *client.Client, ns *embeddednats.Server, stores *stores.KVStores, ctx context.Context) error {
-
+func (dm *SystemModule) SetupRoutes(r chi.Router, ctx context.Context) error {
+	dm.Logger.Info("Setting up System Routes")
 	r.Route("/system", func(systemRouter chi.Router) {
 
 		systemRouter.Get("/", func(w http.ResponseWriter, r *http.Request) {
@@ -45,13 +41,13 @@ func SetupSystemRoutes(r chi.Router, cli *client.Client, ns *embeddednats.Server
 
 			// Watch for system updates
 			ctx := r.Context()
-			syswatcher, err := stores.SystemStore.WatchAll(ctx)
+			syswatcher, err := dm.Store.WatchAll(ctx)
 			if err != nil {
 				http.Error(w, err.Error(), http.StatusInternalServerError)
 				return
 			}
 			defer syswatcher.Stop()
-			dockerwatcher, err := stores.DockerStore.Watch(ctx, "containers")
+			dockerwatcher, err := dm.Stores.DockerStore.Watch(ctx, "containers")
 			if err != nil {
 				http.Error(w, err.Error(), http.StatusInternalServerError)
 				return
@@ -169,10 +165,4 @@ func SetupSystemRoutes(r chi.Router, cli *client.Client, ns *embeddednats.Server
 
 	})
 	return nil
-}
-
-type CPUSimple struct {
-	UsedPercent string `json:"usedPercent"`
-	Used        string `json:"used"`
-	Cores       int    `json:"cores"`
 }

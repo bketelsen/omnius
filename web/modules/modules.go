@@ -25,6 +25,7 @@ type BaseModule struct {
 	JetStream  jetstream.JetStream
 	Logger     *slog.Logger
 	Store      jetstream.KeyValue
+	Stores     *stores.KVStores
 }
 
 func Register(name string, m Module) {
