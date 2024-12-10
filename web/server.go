@@ -2,7 +2,6 @@ package web
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"log/slog"
 	"net/http"
@@ -88,21 +87,6 @@ func (s *Server) RunBlocking() toolbelt.CtxErrFunc {
 				v.SetupRoutes(router, ctx)
 				go v.Poll(ctx)
 			}
-		}
-
-		if err := errors.Join(
-			setupHomeRoutes(router, ns),
-			//	system.SetupSystemRoutes(router, ns, kvstore, ctx),
-			//	services.SetupServicesRoutes(router, ns, kvstore, ctx),
-			//	logs.SetupLogsRoutes(router, ns),
-			//	storage.SetupStorageRoutes(router, ns),
-			//	networking.SetupNetworkingRoutes(router, ns),
-			//	dm.SetupRoutes(router, ctx),
-			//  docker.SetupDockerRoutes(router, logger, client, ns, kvstore, ctx),
-			//	incus.SetupIncusRoutes(router, ns),
-		); err != nil {
-			cancel()
-			return fmt.Errorf("error setting up routes: %w", err)
 		}
 
 		srv := &http.Server{
