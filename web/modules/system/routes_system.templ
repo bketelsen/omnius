@@ -18,7 +18,7 @@ import (
 
 templ SystemPage(groups []*layouts.SidebarGroup, c CPUSimple, v *mem.VirtualMemoryStat, containers []types.Container) {
 	@layouts.Page(groups) {
-		<div data-on-load="$get('/system/poll')">
+		<div data-on-load="$get('/overview/poll')">
 			@components.CardGallery() {
 				@CPUDetail(c)
 				@MemoryDetail(v)
@@ -34,7 +34,7 @@ templ SystemPage(groups []*layouts.SidebarGroup, c CPUSimple, v *mem.VirtualMemo
 }
 
 templ SystemOverview() {
-	@components.OverviewCard("System", "/system")
+	@components.OverviewCard("System", "/overview")
 }
 
 templ CPUDetail(c CPUSimple) {
