@@ -13,10 +13,15 @@ import (
 var AvailableModules = make(map[string]Module)
 
 type Module interface {
+	// Init initializes the module with the logger, stores, nats connection, and jetstream
 	Init(*slog.Logger, *stores.KVStores, *nats.Conn, jetstream.JetStream) error
+	// Poll for this module's data and publish to the NATS server
 	Poll(context.Context)
+	// SetupRoutes creates the http routes for this module
 	SetupRoutes(chi.Router, context.Context) error
+	// CreateStore creates a key value store for this module
 	CreateStore(stores *stores.KVStores) error
+	// Enabled returns true if this module is enabled
 	Enabled() bool
 }
 

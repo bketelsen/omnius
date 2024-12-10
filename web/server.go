@@ -8,6 +8,10 @@ import (
 	"net/http"
 
 	"github.com/bketelsen/omnius/web/modules"
+	// register modules
+	_ "github.com/bketelsen/omnius/web/modules/containers/docker"
+	_ "github.com/bketelsen/omnius/web/modules/system"
+
 	"github.com/bketelsen/omnius/web/stores"
 
 	"github.com/delaneyj/toolbelt"
@@ -67,7 +71,6 @@ func (s *Server) RunBlocking() toolbelt.CtxErrFunc {
 		}
 
 		ctx, cancel := context.WithCancel(ctx)
-
 		for k, v := range modules.AvailableModules {
 			fmt.Println(k, v)
 			s.Logger.Info("Creating module", slog.String("module", k))

@@ -1,141 +1,121 @@
 package web
 
-import (
-	"context"
-	"encoding/json"
-	"fmt"
-	"log/slog"
-	"time"
+// func poll(ctx context.Context, ns *embeddednats.Server, stores *stores.KVStores, dm *docker.DockerModule) error {
 
-	"github.com/bketelsen/omnius/web/modules/containers/docker"
-	"github.com/bketelsen/omnius/web/modules/system"
-	"github.com/bketelsen/omnius/web/stores"
-	"github.com/coreos/go-systemd/v22/dbus"
-	"github.com/delaneyj/toolbelt"
-	"github.com/delaneyj/toolbelt/embeddednats"
-	"github.com/nats-io/nats.go/jetstream"
-	"github.com/shirou/gopsutil/cpu"
-	"github.com/shirou/gopsutil/mem"
-	"github.com/zeebo/xxh3"
-)
+// 	nc, err := ns.Client()
+// 	if err != nil {
+// 		return fmt.Errorf("error creating nats client: %w", err)
+// 	}
 
-func poll(ctx context.Context, ns *embeddednats.Server, stores *stores.KVStores, dm *docker.DockerModule) error {
+// 	js, err := jetstream.New(nc)
+// 	if err != nil {
+// 		return fmt.Errorf("error creating jetstream client: %w", err)
+// 	}
 
-	nc, err := ns.Client()
-	if err != nil {
-		return fmt.Errorf("error creating nats client: %w", err)
-	}
+// 	systemkv, err := js.CreateOrUpdateKeyValue(context.Background(), jetstream.KeyValueConfig{
+// 		Bucket:      system.BucketName,
+// 		Description: system.BucketDescription,
+// 		Compression: true,
+// 		TTL:         time.Hour,
+// 		MaxBytes:    16 * 1024 * 1024,
+// 	})
 
-	js, err := jetstream.New(nc)
-	if err != nil {
-		return fmt.Errorf("error creating jetstream client: %w", err)
-	}
+// 	if err != nil {
+// 		return fmt.Errorf("error creating key value: %w", err)
+// 	}
+// 	stores.SystemStore = systemkv
 
-	systemkv, err := js.CreateOrUpdateKeyValue(context.Background(), jetstream.KeyValueConfig{
-		Bucket:      system.BucketName,
-		Description: system.BucketDescription,
-		Compression: true,
-		TTL:         time.Hour,
-		MaxBytes:    16 * 1024 * 1024,
-	})
+// 	egctx := toolbelt.NewErrGroupSharedCtx(ctx) //	pollDocker(ctx, stores.DockerStore),
+// 	//	dm.Poll(),
+// 	//	pollSystem(ctx, stores.SystemStore),
 
-	if err != nil {
-		return fmt.Errorf("error creating key value: %w", err)
-	}
-	stores.SystemStore = systemkv
+// 	return egctx.Wait()
 
-	egctx := toolbelt.NewErrGroupSharedCtx(ctx,
-		//	pollDocker(ctx, stores.DockerStore),
-		//	dm.Poll(),
-		pollSystem(ctx, stores.SystemStore),
-	)
-	return egctx.Wait()
+// }
 
-}
+// type CPUSimple struct {
+// 	UsedPercent string `json:"usedPercent"`
+// 	Used        string `json:"used"`
+// 	Cores       int    `json:"cores"`
+// }
 
-type CPUSimple struct {
-	UsedPercent string `json:"usedPercent"`
-	Used        string `json:"used"`
-	Cores       int    `json:"cores"`
-}
+// func pollSystem(ctx context.Context, systemkv jetstream.KeyValue) toolbelt.CtxErrFunc {
 
-func pollSystem(ctx context.Context, systemkv jetstream.KeyValue) toolbelt.CtxErrFunc {
+// 	return func(ctxp context.Context) (err error) {
+// 		systemdConnection, _ := dbus.NewSystemConnectionContext(context.Background())
+// 		defer systemdConnection.Close()
+// 		for {
+// 			select {
+// 			case <-ctx.Done():
+// 				defer slog.Info("Stopping system updates")
+// 				return
+// 			case <-time.After(2 * time.Second):
+// 				slog.Info("system tick")
+// 				var (
+// 					err error
+// 				)
+// 				v, err := mem.VirtualMemory()
 
-	return func(ctxp context.Context) (err error) {
-		systemdConnection, _ := dbus.NewSystemConnectionContext(context.Background())
-		defer systemdConnection.Close()
-		for {
-			select {
-			case <-ctx.Done():
-				defer slog.Info("Stopping system updates")
-				return
-			case <-time.After(2 * time.Second):
-				slog.Info("system tick")
-				var (
-					err error
-				)
-				v, err := mem.VirtualMemory()
+// 				if err != nil {
+// 					return fmt.Errorf("error getting memory: %w", err)
+// 				}
+// 				b, err := json.Marshal(v)
+// 				if err != nil {
+// 					slog.Error(err.Error())
+// 					continue
+// 				}
+// 				if _, err := systemkv.Put(context.Background(), "virtualMemory", b); err != nil {
+// 					slog.Error(err.Error())
 
-				if err != nil {
-					return fmt.Errorf("error getting memory: %w", err)
-				}
-				b, err := json.Marshal(v)
-				if err != nil {
-					slog.Error(err.Error())
-					continue
-				}
-				if _, err := systemkv.Put(context.Background(), "virtualMemory", b); err != nil {
-					slog.Error(err.Error())
+// 					continue
+// 				}
+// 				// cpu
+// 				cores, err := cpu.Counts(true)
+// 				if err != nil {
+// 					return fmt.Errorf("error getting cpu counts: %w", err)
+// 				}
 
-					continue
-				}
-				// cpu
-				cores, err := cpu.Counts(true)
-				if err != nil {
-					return fmt.Errorf("error getting cpu counts: %w", err)
-				}
+// 				usage, err := cpu.Percent(0, false)
+// 				if err != nil {
+// 					return fmt.Errorf("error getting cpu percent: %w", err)
+// 				}
+// 				used := fmt.Sprintf("%.2f", usage[0])
+// 				b, err = json.Marshal(CPUSimple{
+// 					UsedPercent: used,
+// 					Used:        fmt.Sprintf("%.0f", usage[0]),
+// 					Cores:       cores,
+// 				})
+// 				if err != nil {
+// 					slog.Error(err.Error())
+// 					continue
+// 				}
+// 				if _, err := systemkv.Put(context.Background(), "cpu", b); err != nil {
+// 					slog.Error(err.Error())
 
-				usage, err := cpu.Percent(0, false)
-				if err != nil {
-					return fmt.Errorf("error getting cpu percent: %w", err)
-				}
-				used := fmt.Sprintf("%.2f", usage[0])
-				b, err = json.Marshal(CPUSimple{
-					UsedPercent: used,
-					Used:        fmt.Sprintf("%.0f", usage[0]),
-					Cores:       cores,
-				})
-				if err != nil {
-					slog.Error(err.Error())
-					continue
-				}
-				if _, err := systemkv.Put(context.Background(), "cpu", b); err != nil {
-					slog.Error(err.Error())
+// 					continue
+// 				}
 
-					continue
-				}
+// 				// systemd units
+// 				units, err := systemdConnection.ListUnitsByPatternsContext(context.Background(), []string{"running"}, []string{"*.service"})
+// 				if err != nil {
+// 					return fmt.Errorf("error getting systemd services: %w", err)
+// 				}
+// 				b, err = json.Marshal(units)
+// 				if err != nil {
+// 					slog.Error(err.Error())
+// 					continue
+// 				}
+// 				if _, err := systemkv.Put(context.Background(), "services", b); err != nil {
+// 					slog.Error(err.Error())
 
-				// systemd units
-				units, err := systemdConnection.ListUnitsByPatternsContext(context.Background(), []string{"running"}, []string{"*.service"})
-				if err != nil {
-					return fmt.Errorf("error getting systemd services: %w", err)
-				}
-				b, err = json.Marshal(units)
-				if err != nil {
-					slog.Error(err.Error())
-					continue
-				}
-				if _, err := systemkv.Put(context.Background(), "services", b); err != nil {
-					slog.Error(err.Error())
+// 					continue
+// 				}
 
-					continue
-				}
+// 			}
+// 		}
 
-			}
-		}
-
-	}
-}
+// 	}
+// }
 
 // func pollDocker(ctx context.Context, dockerkv jetstream.KeyValue) toolbelt.CtxErrFunc {
 // 	return func(ctxp context.Context) (err error) {
@@ -220,13 +200,13 @@ func pollSystem(ctx context.Context, systemkv jetstream.KeyValue) toolbelt.CtxEr
 // 	}
 // }
 
-func hash(b []byte) uint64 {
-	hasher := xxh3.New()
-	defer hasher.Reset()
+// func hash(b []byte) uint64 {
+// 	hasher := xxh3.New()
+// 	defer hasher.Reset()
 
-	_, err := hasher.Write(b)
-	if err != nil {
-		slog.Error(err.Error())
-	}
-	return hasher.Sum64()
-}
+// 	_, err := hasher.Write(b)
+// 	if err != nil {
+// 		slog.Error(err.Error())
+// 	}
+// 	return hasher.Sum64()
+// }

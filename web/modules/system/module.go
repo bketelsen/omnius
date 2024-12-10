@@ -1,6 +1,7 @@
 package system
 
 import (
+	"fmt"
 	"log/slog"
 	"time"
 
@@ -20,6 +21,7 @@ const (
 
 func init() {
 	// automatically register this module as available to initialize
+	fmt.Println("registering system module")
 	modules.Register(ModuleName, &SystemModule{})
 
 }
