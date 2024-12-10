@@ -31,5 +31,8 @@ templ StorageOverviewCard() {
 
 templ StorageDetail() {
 	@components.DetailCard("Storage", "/storage") {
+		@components.Stats() {
+			@components.Stat("Physical Disks", "5", "")
+		}
 	}
 }
