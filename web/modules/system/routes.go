@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/bketelsen/omnius/web/layouts"
 	"github.com/bketelsen/omnius/web/modules/containers/docker"
 	"github.com/bketelsen/omnius/web/modules/system/services"
 	"github.com/coreos/go-systemd/v22/dbus"
@@ -16,9 +17,9 @@ import (
 	datastar "github.com/starfederation/datastar/code/go/sdk"
 )
 
-func (dm *SystemModule) SetupRoutes(r chi.Router, ctx context.Context) error {
+func (dm *SystemModule) SetupRoutes(r chi.Router, sidebarGroups []*layouts.SidebarGroup, ctx context.Context) error {
 	dm.Logger.Info("Setting up System Routes")
-	r.Route("/system", func(systemRouter chi.Router) {
+	r.Route("/"+ModuleName, func(systemRouter chi.Router) {
 
 		systemRouter.Get("/", func(w http.ResponseWriter, r *http.Request) {
 			v, err := mem.VirtualMemory()
@@ -33,7 +34,7 @@ func (dm *SystemModule) SetupRoutes(r chi.Router, ctx context.Context) error {
 				Cores:       0,
 			}
 			containers := []types.Container{}
-			SystemPage(c, v, containers).Render(r.Context(), w)
+			SystemPage(sidebarGroups, c, v, containers).Render(r.Context(), w)
 		})
 
 		systemRouter.Get("/poll", func(w http.ResponseWriter, r *http.Request) {

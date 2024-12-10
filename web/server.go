@@ -5,8 +5,12 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
+	"strings"
 
+	"github.com/a-h/templ"
+	"github.com/bketelsen/omnius/web/layouts"
 	"github.com/bketelsen/omnius/web/modules"
+
 	// register modules
 	_ "github.com/bketelsen/omnius/web/modules/containers/docker"
 	_ "github.com/bketelsen/omnius/web/modules/system"
@@ -23,14 +27,21 @@ import (
 )
 
 type Server struct {
-	Port   int
-	Logger *slog.Logger
+	Port       int
+	Logger     *slog.Logger
+	Categories []*layouts.SidebarGroup
 }
 
 func NewServer(port int, logger *slog.Logger) *Server {
 	return &Server{
 		Port:   port,
 		Logger: logger,
+		Categories: []*layouts.SidebarGroup{
+			{
+				ID:    "system",
+				Label: "SYSTEM",
+			},
+		},
 	}
 }
 
@@ -69,6 +80,40 @@ func (s *Server) RunBlocking() toolbelt.CtxErrFunc {
 			return fmt.Errorf("error creating jetstream client: %w", err)
 		}
 
+		// setup sidebar groups
+		for k, v := range modules.AvailableModules {
+			s.Logger.Info("Checking module", slog.String("module", k))
+			found := false
+
+			for _, c := range s.Categories {
+				if c.ID == v.Group() {
+					s.Logger.Info("found", "category", v.Group())
+					found = true
+					c.Links = append(c.Links, &layouts.SidebarLink{
+						ID:    k,
+						URL:   templ.SafeURL(fmt.Sprintf("/%s", k)),
+						Label: strings.ToUpper(k),
+					})
+					break
+				}
+
+			}
+			if !found {
+				s.Logger.Info("not found", "category", v.Group())
+				s.Categories = append(s.Categories, &layouts.SidebarGroup{
+					ID:    v.Group(),
+					Label: strings.ToUpper(v.Group()),
+					Links: []*layouts.SidebarLink{
+						{
+							ID:    k,
+							URL:   templ.SafeURL(fmt.Sprintf("/%s", k)),
+							Label: strings.ToUpper(k),
+						},
+					},
+				})
+			}
+		}
+		fmt.Println(s.Categories)
 		ctx, cancel := context.WithCancel(ctx)
 		for k, v := range modules.AvailableModules {
 			fmt.Println(k, v)
@@ -84,7 +129,7 @@ func (s *Server) RunBlocking() toolbelt.CtxErrFunc {
 				continue
 			}
 			if v.Enabled() {
-				v.SetupRoutes(router, ctx)
+				v.SetupRoutes(router, s.Categories, ctx)
 				go v.Poll(ctx)
 			}
 		}

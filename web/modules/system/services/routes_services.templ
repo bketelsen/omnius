@@ -9,7 +9,7 @@ import (
 )
 
 templ ServicesPage(units []dbus.UnitStatus) {
-	@layouts.Page() {
+	@layouts.Page([]*layouts.SidebarGroup{}) {
 		@components.CardGallery() {
 			@ServiceDetail(units)
 		}

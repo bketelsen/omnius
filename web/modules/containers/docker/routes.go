@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/bketelsen/omnius/web/layouts"
 	"github.com/docker/docker/api/types"
 	containertypes "github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/image"
@@ -12,7 +13,7 @@ import (
 	datastar "github.com/starfederation/datastar/code/go/sdk"
 )
 
-func (dm *DockerModule) SetupRoutes(r chi.Router, ctx context.Context) error {
+func (dm *DockerModule) SetupRoutes(r chi.Router, sidebarGroups []*layouts.SidebarGroup, ctx context.Context) error {
 	dm.Logger.Info("Setting up Docker Routes")
 
 	r.Route("/docker", func(dockerRouter chi.Router) {
@@ -27,7 +28,7 @@ func (dm *DockerModule) SetupRoutes(r chi.Router, ctx context.Context) error {
 				http.Error(w, err.Error(), http.StatusInternalServerError)
 				return
 			}
-			DockerPage(containers, images).Render(r.Context(), w)
+			DockerPage(sidebarGroups, containers, images).Render(r.Context(), w)
 		})
 
 		dockerRouter.Get("/api", func(w http.ResponseWriter, r *http.Request) {

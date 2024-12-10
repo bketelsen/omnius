@@ -13,7 +13,8 @@ import (
 )
 
 const (
-	ModuleName        = "system"
+	ModuleName        = "overview"
+	Group             = "system"
 	BucketName        = "system"
 	BucketDescription = "System Information"
 	Interval          = 1 * time.Second
@@ -44,6 +45,9 @@ func (d *SystemModule) Init(logger *slog.Logger, stores *stores.KVStores, nc *na
 
 func (d *SystemModule) Enabled() bool {
 	return true
+}
+func (d *SystemModule) Group() string {
+	return Group
 }
 
 func hash(b []byte) uint64 {

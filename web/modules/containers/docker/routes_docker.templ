@@ -11,8 +11,8 @@ import (
 	"strings"
 )
 
-templ DockerPage(containers []types.Container, images []image.Summary) {
-	@layouts.Page() {
+templ DockerPage(sidebarGroups []*layouts.SidebarGroup, containers []types.Container, images []image.Summary) {
+	@layouts.Page(sidebarGroups) {
 		<div data-on-load="$get('/docker/poll')">
 			@components.CardGallery() {
 				@DockerDetail(containers)

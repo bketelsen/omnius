@@ -14,6 +14,7 @@ import (
 
 const (
 	ModuleName        = "docker"
+	Group             = "containers"
 	BucketName        = "docker"
 	BucketDescription = "Docker Container and Image Information"
 	Interval          = 1 * time.Second
@@ -55,6 +56,9 @@ func (d *DockerModule) Init(logger *slog.Logger, stores *stores.KVStores, nc *na
 
 func (d *DockerModule) Enabled() bool {
 	return d.hasDocker
+}
+func (d *DockerModule) Group() string {
+	return Group
 }
 
 func hash(b []byte) uint64 {

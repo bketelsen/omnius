@@ -8,7 +8,7 @@ import (
 )
 
 templ StoragePage(containers []types.Container) {
-	@layouts.Page() {
+	@layouts.Page([]*layouts.SidebarGroup{}) {
 		@components.CardGallery() {
 			@StorageOverview(containers)
 		}

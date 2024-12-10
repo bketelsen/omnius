@@ -2,7 +2,7 @@ package layouts
 
 import "os"
 
-templ Page() {
+templ Page(groups []*SidebarGroup) {
 	<!DOCTYPE html>
 	<html lang="en">
 		<head>
@@ -56,30 +56,44 @@ templ Page() {
 							</a>
 						</footer>
 					</div>
-					<div class="drawer-side">
-						<label for="my-drawer-2" aria-label="close sidebar" class="drawer-overlay"></label>
-						<ul class="menu bg-base-200 min-h-full w-80 p-4">
-							<li class="menu-title">System</li>
-							<li><a href="/system">Overview</a></li>
-							<li><a href="/logs">Logs</a></li>
-							<li><a href="/storage">Storage</a></li>
-							<li><a href="/networking">Networking</a></li>
-							<li><a href="/services">Services</a></li>
-							<li class="mt-4 menu-title">Containers</li>
-							<li><a href="/docker">Docker</a></li>
-							<li><a href="/incus">Incus</a></li>
-							<li class="mt-4 menu-title">Accounts</li>
-							<li><a>Users</a></li>
-							<li><a>Groups</a></li>
-							<li class="mt-4 menu-title">Shares</li>
-							<li><a>NFS</a></li>
-							<li><a>Samba</a></li>
-						</ul>
-					</div>
+					@Drawer(groups)
 				</div>
 			</div>
 		</body>
 	</html>
+}
+
+templ Drawer(groups []*SidebarGroup) {
+	<div class="drawer-side">
+		<label for="my-drawer-2" aria-label="close sidebar" class="drawer-overlay"></label>
+		<ul class="menu bg-base-200 min-h-full w-80 p-4">
+			for _, grp := range groups {
+				<li class="menu-title">{ grp.Label }</li>
+				for _, link := range grp.Links {
+					<li>
+						<a href={ link.URL }>
+							{ link.Label }
+						</a>
+					</li>
+				}
+			}
+			// <li class="menu-title">System</li>
+			// <li><a href="/system">Overview</a></li>
+			// <li><a href="/logs">Logs</a></li>
+			// <li><a href="/storage">Storage</a></li>
+			// <li><a href="/networking">Networking</a></li>
+			// <li><a href="/services">Services</a></li>
+			// <li class="mt-4 menu-title">Containers</li>
+			// <li><a href="/docker">Docker</a></li>
+			// <li><a href="/incus">Incus</a></li>
+			// <li class="mt-4 menu-title">Accounts</li>
+			// <li><a>Users</a></li>
+			// <li><a>Groups</a></li>
+			// <li class="mt-4 menu-title">Shares</li>
+			// <li><a>NFS</a></li>
+			// <li><a>Samba</a></li>
+		</ul>
+	</div>
 }
 
 func hostname() string {
@@ -88,4 +102,17 @@ func hostname() string {
 		return "unknown"
 	}
 	return hostname
+}
+
+type SidebarLink struct {
+	ID         string
+	Label      string
+	URL        templ.SafeURL
+	IsDisabled bool
+}
+
+type SidebarGroup struct {
+	ID    string
+	Label string
+	Links []*SidebarLink
 }

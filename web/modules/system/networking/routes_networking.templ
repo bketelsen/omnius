@@ -8,7 +8,7 @@ import (
 )
 
 templ NetworkPage(containers []types.Container) {
-	@layouts.Page() {
+	@layouts.Page([]*layouts.SidebarGroup{}) {
 		@components.CardGallery() {
 			@NetworkOverview(containers)
 		}

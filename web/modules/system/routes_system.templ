@@ -16,8 +16,8 @@ import (
 	"strconv"
 )
 
-templ SystemPage(c CPUSimple, v *mem.VirtualMemoryStat, containers []types.Container) {
-	@layouts.Page() {
+templ SystemPage(groups []*layouts.SidebarGroup, c CPUSimple, v *mem.VirtualMemoryStat, containers []types.Container) {
+	@layouts.Page(groups) {
 		<div data-on-load="$get('/system/poll')">
 			@components.CardGallery() {
 				@CPUDetail(c)
