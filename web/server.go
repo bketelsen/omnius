@@ -20,6 +20,7 @@ import (
 	"github.com/delaneyj/toolbelt"
 	"github.com/delaneyj/toolbelt/embeddednats"
 	natsserver "github.com/nats-io/nats-server/v2/server"
+	"github.com/nats-io/nats.go/jetstream"
 
 	"github.com/docker/docker/client"
 	"github.com/go-chi/chi/v5"
@@ -49,7 +50,22 @@ func RunBlocking(logger *slog.Logger, client *client.Client, port int) toolbelt.
 
 		ns.WaitForServer()
 		kvstore := &stores.KVStores{}
-
+		natsCon, err := ns.Client()
+		if err != nil {
+			return fmt.Errorf("error getting nats client: %w", err)
+		}
+		js, err := jetstream.New(natsCon)
+		if err != nil {
+			return fmt.Errorf("error creating jetstream client: %w", err)
+		}
+		dm, err := docker.NewDockerModule(logger, kvstore, client, natsCon, js)
+		if err != nil {
+			return fmt.Errorf("error creating docker module: %w", err)
+		}
+		err = dm.CreateStore(kvstore)
+		if err != nil {
+			return fmt.Errorf("error creating jetstream client: %w", err)
+		}
 		if err := errors.Join(
 			setupHomeRoutes(router, ns),
 			system.SetupSystemRoutes(router, client, ns, kvstore, ctx),
@@ -57,13 +73,14 @@ func RunBlocking(logger *slog.Logger, client *client.Client, port int) toolbelt.
 			logs.SetupLogsRoutes(router, client, ns),
 			storage.SetupStorageRoutes(router, client, ns),
 			networking.SetupNetworkingRoutes(router, client, ns),
-
-			docker.SetupDockerRoutes(router, logger, client, ns, kvstore, ctx),
+			dm.SetupRoutes(router, ctx),
+			//docker.SetupDockerRoutes(router, logger, client, ns, kvstore, ctx),
 			incus.SetupIncusRoutes(router, client, ns),
 		); err != nil {
 			return fmt.Errorf("error setting up routes: %w", err)
 		}
-		go poll(ctx, ns, kvstore)
+
+		go poll(ctx, ns, kvstore, dm)
 		if err != nil {
 			return fmt.Errorf("error polling: %w", err)
 		}

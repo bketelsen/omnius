@@ -8,6 +8,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/bketelsen/omnius/web/modules/containers/docker"
+	"github.com/bketelsen/omnius/web/modules/system"
 	"github.com/bketelsen/omnius/web/stores"
 	"github.com/coreos/go-systemd/v22/dbus"
 	"github.com/delaneyj/toolbelt"
@@ -22,7 +24,7 @@ import (
 	"github.com/zeebo/xxh3"
 )
 
-func poll(ctx context.Context, ns *embeddednats.Server, stores *stores.KVStores) error {
+func poll(ctx context.Context, ns *embeddednats.Server, stores *stores.KVStores, dm *docker.DockerModule) error {
 
 	nc, err := ns.Client()
 	if err != nil {
@@ -34,22 +36,9 @@ func poll(ctx context.Context, ns *embeddednats.Server, stores *stores.KVStores)
 		return fmt.Errorf("error creating jetstream client: %w", err)
 	}
 
-	dockerkv, err := js.CreateOrUpdateKeyValue(context.Background(), jetstream.KeyValueConfig{
-		Bucket:      "docker",
-		Description: "Omnius Docker Key Value Store",
-		Compression: true,
-		TTL:         time.Hour,
-		MaxBytes:    16 * 1024 * 1024,
-	})
-
-	if err != nil {
-		return fmt.Errorf("error creating key value: %w", err)
-	}
-	stores.DockerStore = dockerkv
-
 	systemkv, err := js.CreateOrUpdateKeyValue(context.Background(), jetstream.KeyValueConfig{
-		Bucket:      "system",
-		Description: "Omnius System Key Value Store",
+		Bucket:      system.BucketName,
+		Description: system.BucketDescription,
 		Compression: true,
 		TTL:         time.Hour,
 		MaxBytes:    16 * 1024 * 1024,
@@ -61,7 +50,8 @@ func poll(ctx context.Context, ns *embeddednats.Server, stores *stores.KVStores)
 	stores.SystemStore = systemkv
 
 	egctx := toolbelt.NewErrGroupSharedCtx(ctx,
-		pollDocker(ctx, stores.DockerStore),
+		//	pollDocker(ctx, stores.DockerStore),
+		dm.Poll(),
 		pollSystem(ctx, stores.SystemStore),
 	)
 	return egctx.Wait()

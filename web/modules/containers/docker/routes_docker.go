@@ -2,21 +2,17 @@ package docker
 
 import (
 	"context"
-	"log/slog"
 	"net/http"
 	"time"
 
-	"github.com/bketelsen/omnius/web/stores"
-	"github.com/delaneyj/toolbelt/embeddednats"
 	"github.com/docker/docker/api/types"
 	containertypes "github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/image"
-	"github.com/docker/docker/client"
 	"github.com/go-chi/chi/v5"
 	datastar "github.com/starfederation/datastar/code/go/sdk"
 )
 
-func SetupDockerRoutes(r chi.Router, logger *slog.Logger, cli *client.Client, ns *embeddednats.Server, stores *stores.KVStores, ctx context.Context) error {
+func (dm *DockerModule) SetupRoutes(r chi.Router, ctx context.Context) error {
 
 	r.Route("/docker", func(dockerRouter chi.Router) {
 
@@ -26,7 +22,7 @@ func SetupDockerRoutes(r chi.Router, logger *slog.Logger, cli *client.Client, ns
 				images     []image.Summary
 				err        error
 			)
-			if containers, err = cli.ContainerList(r.Context(), containertypes.ListOptions{}); err != nil {
+			if containers, err = dm.client.ContainerList(r.Context(), containertypes.ListOptions{}); err != nil {
 				http.Error(w, err.Error(), http.StatusInternalServerError)
 				return
 			}
@@ -38,7 +34,7 @@ func SetupDockerRoutes(r chi.Router, logger *slog.Logger, cli *client.Client, ns
 				containers []types.Container
 				err        error
 			)
-			if containers, err = cli.ContainerList(r.Context(), containertypes.ListOptions{}); err != nil {
+			if containers, err = dm.client.ContainerList(r.Context(), containertypes.ListOptions{}); err != nil {
 				http.Error(w, err.Error(), http.StatusInternalServerError)
 				return
 			}
@@ -57,7 +53,7 @@ func SetupDockerRoutes(r chi.Router, logger *slog.Logger, cli *client.Client, ns
 				case <-ctx.Done():
 					return
 				case <-time.After(1 * time.Second):
-					if containers, err = cli.ContainerList(r.Context(), containertypes.ListOptions{}); err != nil {
+					if containers, err = dm.client.ContainerList(r.Context(), containertypes.ListOptions{}); err != nil {
 						http.Error(w, err.Error(), http.StatusInternalServerError)
 						return
 					}
@@ -78,11 +74,11 @@ func SetupDockerRoutes(r chi.Router, logger *slog.Logger, cli *client.Client, ns
 				containers []types.Container
 				err        error
 			)
-			if err = cli.ContainerPause(r.Context(), idParam); err != nil {
+			if err = dm.client.ContainerPause(r.Context(), idParam); err != nil {
 				http.Error(w, err.Error(), http.StatusInternalServerError)
 				return
 			}
-			if containers, err = cli.ContainerList(r.Context(), containertypes.ListOptions{}); err != nil {
+			if containers, err = dm.client.ContainerList(r.Context(), containertypes.ListOptions{}); err != nil {
 				http.Error(w, err.Error(), http.StatusInternalServerError)
 				return
 			}
@@ -99,12 +95,12 @@ func SetupDockerRoutes(r chi.Router, logger *slog.Logger, cli *client.Client, ns
 				timeout    int
 			)
 			timeout = 10
-			if err = cli.ContainerStop(r.Context(), idParam, containertypes.StopOptions{Timeout: &timeout}); err != nil {
+			if err = dm.client.ContainerStop(r.Context(), idParam, containertypes.StopOptions{Timeout: &timeout}); err != nil {
 				http.Error(w, err.Error(), http.StatusInternalServerError)
 				return
 			}
 			time.Sleep(10 * time.Second)
-			if containers, err = cli.ContainerList(r.Context(), containertypes.ListOptions{}); err != nil {
+			if containers, err = dm.client.ContainerList(r.Context(), containertypes.ListOptions{}); err != nil {
 				http.Error(w, err.Error(), http.StatusInternalServerError)
 				return
 			}
@@ -118,11 +114,11 @@ func SetupDockerRoutes(r chi.Router, logger *slog.Logger, cli *client.Client, ns
 				containers []types.Container
 				err        error
 			)
-			if err = cli.ContainerUnpause(r.Context(), idParam); err != nil {
+			if err = dm.client.ContainerUnpause(r.Context(), idParam); err != nil {
 				http.Error(w, err.Error(), http.StatusInternalServerError)
 				return
 			}
-			if containers, err = cli.ContainerList(r.Context(), containertypes.ListOptions{}); err != nil {
+			if containers, err = dm.client.ContainerList(r.Context(), containertypes.ListOptions{}); err != nil {
 				http.Error(w, err.Error(), http.StatusInternalServerError)
 				return
 			}
