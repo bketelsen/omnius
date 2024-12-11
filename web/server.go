@@ -116,6 +116,13 @@ func (s *Server) RunBlocking() toolbelt.CtxErrFunc {
 				s.Logger.Error(err.Error())
 			}
 		}
+		go func() {
+			time.Sleep(20 * time.Second)
+			err = kvstore.MessageStore.Delete(ctx, "welcome")
+			if err != nil {
+				s.Logger.Error(err.Error())
+			}
+		}()
 
 		// setup sidebar groups
 		for k, v := range modules.AvailableModules {

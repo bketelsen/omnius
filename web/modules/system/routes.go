@@ -71,19 +71,55 @@ func (dm *SystemModule) SetupRoutes(r chi.Router, sidebarGroups []*layouts.Sideb
 					if entry == nil {
 						continue
 					}
-					var toast components.Toast
-					if err := json.Unmarshal(entry.Value(), &toast); err != nil {
+					dm.Logger.Info("update", "operation", entry.Operation())
+					keys, err := dm.Stores.MessageStore.Keys(ctx)
+					if err != nil {
 						dm.Logger.Error("Message Update", "error", err)
-						sse.ConsoleError(err)
-						continue
 					}
-
-					c := components.ToastUpdate([]components.Toast{toast})
+					dm.Logger.Info("keys", "keys", keys)
+					var toasts []components.Toast
+					for _, key := range keys {
+						dm.Logger.Info("key", "key", key)
+						val, err := dm.Stores.MessageStore.Get(ctx, key)
+						if err != nil {
+							dm.Logger.Error("Message Update", "error", err)
+						}
+						var toast components.Toast
+						if err := json.Unmarshal(val.Value(), &toast); err != nil {
+							dm.Logger.Error("Message Update", "error", err)
+							sse.ConsoleError(err)
+							continue
+						}
+						toasts = append(toasts, toast)
+					}
+					c := components.ToastUpdate(toasts)
 
 					if err := sse.MergeFragmentTempl(c); err != nil {
 						sse.ConsoleError(err)
 						return
 					}
+
+					// if entry.Operation() == jetstream.KeyValueDelete {
+					// 	c := components.ToastUpdate([]components.Toast{})
+					// 	if err := sse.MergeFragmentTempl(c); err != nil {
+					// 		sse.ConsoleError(err)
+					// 		return
+					// 	}
+					// } else {
+					// 	var toast components.Toast
+					// 	if err := json.Unmarshal(entry.Value(), &toast); err != nil {
+					// 		dm.Logger.Error("Message Update", "error", err)
+					// 		sse.ConsoleError(err)
+					// 		continue
+					// 	}
+
+					// 	c := components.ToastUpdate([]components.Toast{toast})
+
+					// 	if err := sse.MergeFragmentTempl(c); err != nil {
+					// 		sse.ConsoleError(err)
+					// 		return
+					// 	}
+					// }
 				case entry := <-dockerwatcher.Updates():
 					//	slog.Info("Docker Update", "entry", entry)
 					if entry == nil {

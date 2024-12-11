@@ -27,6 +27,7 @@ func (d *SystemModule) Poll(ctx context.Context) {
 			return
 		case <-time.After(2 * time.Second):
 			d.Logger.Info("system tick")
+
 			var (
 				err error
 			)

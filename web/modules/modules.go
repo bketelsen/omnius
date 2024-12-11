@@ -2,11 +2,15 @@ package modules
 
 import (
 	"context"
+	"encoding/json"
 	"log/slog"
+	"time"
 
+	"github.com/bketelsen/omnius/web/components"
 	"github.com/bketelsen/omnius/web/layouts"
 	"github.com/bketelsen/omnius/web/stores"
 	"github.com/go-chi/chi/v5"
+	"github.com/google/uuid"
 	"github.com/nats-io/nats.go"
 	"github.com/nats-io/nats.go/jetstream"
 )
@@ -38,4 +42,30 @@ type BaseModule struct {
 
 func Register(name string, m Module) {
 	AvailableModules[name] = m
+}
+
+func (b *BaseModule) CreateToast(t components.Toast) error {
+
+	toastBytes, err := json.Marshal(t)
+	if err != nil {
+		b.Logger.Error(err.Error())
+		return err
+	} else {
+		uuid := uuid.New().String()
+		_, err = b.Stores.MessageStore.Put(context.Background(), uuid, toastBytes)
+		if err != nil {
+			b.Logger.Error(err.Error())
+
+			return err
+		}
+		go func() {
+			time.Sleep(20 * time.Second)
+			err = b.Stores.MessageStore.Delete(context.Background(), uuid)
+			if err != nil {
+				b.Logger.Error(err.Error())
+			}
+		}()
+		return nil
+	}
+
 }
