@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/bketelsen/omnius/web/components"
 	"github.com/bketelsen/omnius/web/layouts"
 	"github.com/bketelsen/omnius/web/modules/containers/docker"
 	"github.com/bketelsen/omnius/web/modules/system/services"
@@ -54,11 +55,35 @@ func (dm *SystemModule) SetupRoutes(r chi.Router, sidebarGroups []*layouts.Sideb
 				return
 			}
 			defer dockerwatcher.Stop()
+			messagewatcher, err := dm.Stores.MessageStore.WatchAll(ctx)
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+			defer messagewatcher.Stop()
 
 			for {
 				select {
 				case <-ctx.Done():
 					return
+				case entry := <-messagewatcher.Updates():
+					//	slog.Info("Docker Update", "entry", entry)
+					if entry == nil {
+						continue
+					}
+					var toast components.Toast
+					if err := json.Unmarshal(entry.Value(), &toast); err != nil {
+						dm.Logger.Error("Message Update", "error", err)
+						sse.ConsoleError(err)
+						continue
+					}
+
+					c := components.ToastUpdate([]components.Toast{toast})
+
+					if err := sse.MergeFragmentTempl(c); err != nil {
+						sse.ConsoleError(err)
+						return
+					}
 				case entry := <-dockerwatcher.Updates():
 					//	slog.Info("Docker Update", "entry", entry)
 					if entry == nil {

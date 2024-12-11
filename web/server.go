@@ -22,7 +22,6 @@ import (
 	_ "github.com/bketelsen/omnius/web/modules/system/storage"
 
 	"github.com/bketelsen/omnius/web/stores"
-	datastar "github.com/starfederation/datastar/sdk/go"
 
 	"github.com/delaneyj/toolbelt"
 	"github.com/delaneyj/toolbelt/embeddednats"
@@ -93,7 +92,7 @@ func (s *Server) RunBlocking() toolbelt.CtxErrFunc {
 			Bucket:      "messages",
 			Description: "System Messages",
 			Compression: true,
-			TTL:         5 * time.Minute,
+			TTL:         10 * time.Second,
 			MaxBytes:    16 * 1024 * 1024,
 		})
 
@@ -179,37 +178,9 @@ func (s *Server) RunBlocking() toolbelt.CtxErrFunc {
 			http.Redirect(w, r, "/overview", http.StatusSeeOther)
 		})
 
-		router.Get("/api/messages", func(w http.ResponseWriter, r *http.Request) {
-			s.Logger.Info("API:  Messages")
-			sse := datastar.NewSSE(w, r)
-
-			list, err := kvstore.MessageStore.Keys(ctx)
-			if err != nil {
-				sse.ConsoleError(err)
-				return
-			}
-			toasts := []components.Toast{}
-			for _, k := range list {
-				v, err := kvstore.MessageStore.Get(ctx, k)
-				if err != nil {
-					sse.ConsoleError(err)
-					return
-				}
-				var toast components.Toast
-				if err := json.Unmarshal(v.Value(), &toast); err != nil {
-					s.Logger.Error("Message Update", "error", err)
-					sse.ConsoleError(err)
-					continue
-				}
-				toasts = append(toasts, toast)
-			}
-			c := components.ToastUpdate(toasts)
-			if err := sse.MergeFragmentTempl(c); err != nil {
-				sse.ConsoleError(err)
-				return
-			}
-
-		})
+		for _, y := range router.Routes() {
+			s.Logger.Info("Route", slog.String("pattern:", y.Pattern))
+		}
 
 		srv := &http.Server{
 			Addr:    fmt.Sprintf("0.0.0.0:%d", s.Port),
