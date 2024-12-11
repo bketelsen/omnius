@@ -22,7 +22,7 @@ templ SystemPage(groups []*layouts.SidebarGroup, c CPUSimple, v *mem.VirtualMemo
 			@components.CardGallery() {
 				@CPUDetail(c)
 				@MemoryDetail(v)
-				@logs.LogsOverview([]types.Container{})
+				@logs.LogOverview()
 				@services.ServiceOverview([]dbus.UnitStatus{})
 				@storage.StorageOverview()
 				@networking.NetworkOverview([]types.Container{})

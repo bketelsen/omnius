@@ -1,6 +1,7 @@
 package docker
 
 import (
+	"context"
 	"log/slog"
 	"time"
 
@@ -44,11 +45,22 @@ func (d *DockerModule) Init(logger *slog.Logger, stores *stores.KVStores, nc *na
 
 	cli, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
 	if err != nil {
+		d.Logger.Error("connecting to docker daemon", "error", err)
 		d.hasDocker = false
-	} else {
-		d.client = cli
-		d.hasDocker = true
-		d.CreateStore(stores)
+	}
+	if cli != nil {
+		d.Logger.Info("docker connection created")
+
+		// smoke test the connection
+		_, err := cli.Info(context.Background())
+		if err != nil {
+			d.hasDocker = false
+
+		} else {
+			d.client = cli
+			d.hasDocker = true
+			d.CreateStore(stores)
+		}
 
 	}
 	return nil

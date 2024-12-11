@@ -15,7 +15,10 @@ import (
 func (d *SystemModule) Poll(ctx context.Context) {
 	d.Logger.Info("Polling System Module")
 
-	systemdConnection, _ := dbus.NewSystemConnectionContext(context.Background())
+	systemdConnection, err := dbus.NewSystemConnectionContext(context.Background())
+	if err != nil {
+		d.Logger.Error("systemd dbus connection", "error", err)
+	}
 	defer systemdConnection.Close()
 	for {
 		select {
@@ -72,20 +75,22 @@ func (d *SystemModule) Poll(ctx context.Context) {
 			}
 
 			// systemd units
-			units, err := systemdConnection.ListUnitsByPatternsContext(context.Background(), []string{"running"}, []string{"*.service"})
-			if err != nil {
-				d.Logger.Error("error getting systemd services", "error", err)
-				continue
-			}
-			b, err = json.Marshal(units)
-			if err != nil {
-				d.Logger.Error(err.Error())
-				continue
-			}
-			if _, err := d.Store.Put(context.Background(), "services", b); err != nil {
-				d.Logger.Error(err.Error())
+			if systemdConnection != nil {
+				units, err := systemdConnection.ListUnitsByPatternsContext(context.Background(), []string{"running"}, []string{"*.service"})
+				if err != nil {
+					d.Logger.Error("error getting systemd services", "error", err)
+					continue
+				}
+				b, err = json.Marshal(units)
+				if err != nil {
+					d.Logger.Error(err.Error())
+					continue
+				}
+				if _, err := d.Store.Put(context.Background(), "services", b); err != nil {
+					d.Logger.Error(err.Error())
 
-				continue
+					continue
+				}
 			}
 
 		}

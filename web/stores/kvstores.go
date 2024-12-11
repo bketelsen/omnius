@@ -7,4 +7,5 @@ type KVStores struct {
 	DockerStore  jetstream.KeyValue
 	SystemStore  jetstream.KeyValue
 	StorageStore jetstream.KeyValue
+	LogStore     jetstream.KeyValue
 }

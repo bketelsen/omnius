@@ -134,10 +134,15 @@ func (s *Server) RunBlocking() toolbelt.CtxErrFunc {
 				continue
 			}
 			if v.Enabled() {
+
 				v.SetupRoutes(router, s.Categories, ctx)
 				go v.Poll(ctx)
 			}
 		}
+		router.Get("/", func(w http.ResponseWriter, r *http.Request) {
+
+			http.Redirect(w, r, "/overview", http.StatusSeeOther)
+		})
 
 		srv := &http.Server{
 			Addr:    fmt.Sprintf("0.0.0.0:%d", s.Port),
