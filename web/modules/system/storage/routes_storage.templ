@@ -7,7 +7,7 @@ import (
 
 templ StoragePage(sidebarGroups []*layouts.SidebarGroup) {
 	@layouts.Page(sidebarGroups) {
-		<div data-on-load="$get('/storage/poll')">
+		<div data-on-load="sse('/storage/poll')">
 			@components.CardGallery() {
 				@StorageDetail()
 			}

@@ -11,7 +11,7 @@ import (
 	"github.com/delaneyj/toolbelt/embeddednats"
 	"github.com/docker/docker/client"
 	"github.com/go-chi/chi/v5"
-	datastar "github.com/starfederation/datastar/code/go/sdk"
+	datastar "github.com/starfederation/datastar/sdk/go"
 )
 
 func SetupServicesRoutes(r chi.Router, cli *client.Client, ns *embeddednats.Server, stores *stores.KVStores, ctx context.Context) error {

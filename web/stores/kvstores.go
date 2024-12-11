@@ -8,4 +8,5 @@ type KVStores struct {
 	SystemStore  jetstream.KeyValue
 	StorageStore jetstream.KeyValue
 	LogStore     jetstream.KeyValue
+	MessageStore jetstream.KeyValue
 }

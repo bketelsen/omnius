@@ -65,3 +65,25 @@ templ Stat(title, value, desc string) {
 		<div class="stat-desc">{ desc }</div>
 	</div>
 }
+
+templ ToastContainer() {
+	<div id="omniustoasts" class="toast" data-on-raf__throttle.5000ms="sse('/api/messages')">
+		<div id="omniustoast" class="toast"></div>
+	</div>
+}
+
+templ ToastUpdate(toasts []Toast) {
+	<div id="omniustoast" class="toast">
+		for _, toast := range toasts {
+			<div class={ "alert alert-" + toast.Type }>
+				<span>{ toast.Message }</span>
+			</div>
+		}
+	</div>
+}
+
+type Toast struct {
+	Title   string
+	Message string
+	Type    string
+}

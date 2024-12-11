@@ -13,7 +13,7 @@ require (
 	github.com/nats-io/nats.go v1.37.0
 	github.com/shirou/gopsutil v3.21.11+incompatible
 	github.com/shirou/gopsutil/v4 v4.24.11
-	github.com/starfederation/datastar v0.20.0
+	github.com/starfederation/datastar v0.21.0
 	github.com/zeebo/xxh3 v1.0.2
 )
 

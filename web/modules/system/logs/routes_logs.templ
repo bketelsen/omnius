@@ -3,12 +3,11 @@ package logs
 import (
 	"github.com/bketelsen/omnius/web/components"
 	"github.com/bketelsen/omnius/web/layouts"
-
 )
 
 templ LogPage(sidebarGroups []*layouts.SidebarGroup) {
 	@layouts.Page(sidebarGroups) {
-		<div data-on-load="$get('/Log/poll')">
+		<div data-on-load="sse('/Log/poll')">
 			@components.CardGallery() {
 				@LogDetail()
 			}
@@ -35,8 +34,6 @@ templ LogDetail() {
 	}
 }
 
-
-
 templ LogTable() {
 	<div id="Logcontainers" class="overflow-x-auto">
 		<table class="table">
@@ -52,10 +49,6 @@ templ LogTable() {
 					<th>Actions</th>
 				</tr>
 			</thead>
-
 		</table>
 	</div>
 }
-
-
-

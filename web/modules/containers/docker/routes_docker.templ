@@ -6,14 +6,14 @@ import (
 	"github.com/bketelsen/omnius/web/layouts"
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/image"
-	datastar "github.com/starfederation/datastar/code/go/sdk"
+	datastar "github.com/starfederation/datastar/sdk/go"
 	"strconv"
 	"strings"
 )
 
 templ DockerPage(sidebarGroups []*layouts.SidebarGroup, containers []types.Container, images []image.Summary) {
 	@layouts.Page(sidebarGroups) {
-		<div data-on-load="$get('/docker/poll')">
+		<div data-on-load="sse('/docker/poll')">
 			@components.CardGallery() {
 				@DockerDetail(containers)
 				@ImageOverview(images)

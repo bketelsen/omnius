@@ -14,7 +14,7 @@ import (
 	"github.com/docker/docker/api/types"
 	"github.com/go-chi/chi/v5"
 	"github.com/shirou/gopsutil/v4/mem"
-	datastar "github.com/starfederation/datastar/code/go/sdk"
+	datastar "github.com/starfederation/datastar/sdk/go"
 )
 
 func (dm *SystemModule) SetupRoutes(r chi.Router, sidebarGroups []*layouts.SidebarGroup, ctx context.Context) error {
@@ -76,7 +76,7 @@ func (dm *SystemModule) SetupRoutes(r chi.Router, sidebarGroups []*layouts.Sideb
 						return
 					}
 				case entry := <-syswatcher.Updates():
-					//		slog.Info("System Update", "entry", entry)
+					dm.Logger.Info("System Update", "entry", entry)
 					if entry == nil {
 						continue
 					}

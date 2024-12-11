@@ -1,6 +1,9 @@
 package layouts
 
-import "os"
+import (
+	"github.com/bketelsen/omnius/web/components"
+	"os"
+)
 
 templ Page(groups []*SidebarGroup) {
 	<!DOCTYPE html>
@@ -45,6 +48,7 @@ templ Page(groups []*SidebarGroup) {
 						</div>
 						<main class="flex-1">
 							{ children... }
+							@components.ToastContainer()
 						</main>
 						<footer class="font-light text-center py-3 text-gray-500">
 							<a

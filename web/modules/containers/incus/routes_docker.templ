@@ -5,13 +5,13 @@ import (
 	"github.com/bketelsen/omnius/web/components"
 	"github.com/bketelsen/omnius/web/layouts"
 	"github.com/docker/docker/api/types"
-	datastar "github.com/starfederation/datastar/code/go/sdk"
+	datastar "github.com/starfederation/datastar/sdk/go"
 	"strings"
 )
 
 templ IncusPage(sidebarGroups []*layouts.SidebarGroup) {
 	@layouts.Page(sidebarGroups) {
-		<div data-on-load="$get('/incus/poll')">
+		<div data-on-load="sse('/incus/poll')">
 			@components.CardGallery() {
 				@IncusDetail()
 				@ImageOverview()
