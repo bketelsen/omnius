@@ -44,10 +44,9 @@ func Register(name string, m Module) {
 	AvailableModules[name] = m
 }
 
-type ModuleUpdate struct {
-	Module string
-}
-
+// CreateToast creates a new message in the system message store.
+// It's the responsibility of the caller to schedule deletion of
+// the message. Preferably after it's actually been delivered
 func (b *BaseModule) CreateToast(t components.Toast) error {
 
 	toastBytes, err := json.Marshal(t)
