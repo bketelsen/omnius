@@ -44,6 +44,10 @@ func Register(name string, m Module) {
 	AvailableModules[name] = m
 }
 
+type ModuleUpdate struct {
+	Module string
+}
+
 func (b *BaseModule) CreateToast(t components.Toast) error {
 
 	toastBytes, err := json.Marshal(t)
@@ -58,14 +62,22 @@ func (b *BaseModule) CreateToast(t components.Toast) error {
 
 			return err
 		}
-		go func() {
-			time.Sleep(20 * time.Second)
-			err = b.Stores.MessageStore.Delete(context.Background(), uuid)
-			if err != nil {
-				b.Logger.Error(err.Error())
-			}
-		}()
+
 		return nil
 	}
+
+}
+
+// ExpireToast deletes the notification from the message store after `duration`
+// has passed
+func (b *BaseModule) ExpireToast(id string, duration time.Duration) {
+
+	go func() {
+		time.Sleep(duration)
+		err := b.Stores.MessageStore.Delete(context.Background(), id)
+		if err != nil {
+			b.Logger.Error(err.Error())
+		}
+	}()
 
 }

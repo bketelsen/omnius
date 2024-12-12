@@ -91,6 +91,7 @@ func (dm *SystemModule) SetupRoutes(r chi.Router, sidebarGroups []*layouts.Sideb
 							continue
 						}
 						toasts = append(toasts, toast)
+						dm.BaseModule.ExpireToast(key, 10*time.Second)
 					}
 					c := components.ToastUpdate(toasts)
 
