@@ -99,27 +99,6 @@ func (dm *SystemModule) SetupRoutes(r chi.Router, sidebarGroups []*layouts.Sideb
 						return
 					}
 
-					// if entry.Operation() == jetstream.KeyValueDelete {
-					// 	c := components.ToastUpdate([]components.Toast{})
-					// 	if err := sse.MergeFragmentTempl(c); err != nil {
-					// 		sse.ConsoleError(err)
-					// 		return
-					// 	}
-					// } else {
-					// 	var toast components.Toast
-					// 	if err := json.Unmarshal(entry.Value(), &toast); err != nil {
-					// 		dm.Logger.Error("Message Update", "error", err)
-					// 		sse.ConsoleError(err)
-					// 		continue
-					// 	}
-
-					// 	c := components.ToastUpdate([]components.Toast{toast})
-
-					// 	if err := sse.MergeFragmentTempl(c); err != nil {
-					// 		sse.ConsoleError(err)
-					// 		return
-					// 	}
-					// }
 				case entry := <-dockerwatcher.Updates():
 					//	slog.Info("Docker Update", "entry", entry)
 					if entry == nil {
