@@ -7,6 +7,7 @@ import (
 	"log/slog"
 	"time"
 
+	"github.com/bketelsen/omnius/web/components"
 	"github.com/coreos/go-systemd/v22/dbus"
 	"github.com/shirou/gopsutil/cpu"
 	"github.com/shirou/gopsutil/v4/mem"
@@ -18,6 +19,13 @@ func (d *SystemModule) Poll(ctx context.Context) {
 	systemdConnection, err := dbus.NewSystemConnectionContext(context.Background())
 	if err != nil {
 		d.Logger.Error("systemd dbus connection", "error", err)
+		errt := d.BaseModule.CreateToast(components.Toast{
+			Message: "SystemD not found. Disabling.",
+			Type:    components.AlertError,
+		})
+		if errt != nil {
+			d.Logger.Error("creating toast", "error", err)
+		}
 	}
 	defer systemdConnection.Close()
 	for {

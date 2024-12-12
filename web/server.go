@@ -105,7 +105,7 @@ func (s *Server) RunBlocking() toolbelt.CtxErrFunc {
 		toast := components.Toast{
 			Title:   "Welcome to OMNIUS",
 			Message: "OMNIUS is a toolbelt for managing your containers and system",
-			Type:    "success",
+			Type:    components.AlertInfo,
 		}
 		toastBytes, err := json.Marshal(toast)
 		if err != nil {

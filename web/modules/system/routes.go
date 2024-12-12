@@ -137,7 +137,7 @@ func (dm *SystemModule) SetupRoutes(r chi.Router, sidebarGroups []*layouts.Sideb
 						return
 					}
 				case entry := <-syswatcher.Updates():
-					dm.Logger.Info("System Update", "entry", entry)
+					//dm.Logger.Info("System Update", "entry", entry)
 					if entry == nil {
 						continue
 					}

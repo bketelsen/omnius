@@ -5,6 +5,7 @@ import (
 	"log/slog"
 	"time"
 
+	"github.com/bketelsen/omnius/web/components"
 	"github.com/bketelsen/omnius/web/modules"
 	"github.com/bketelsen/omnius/web/stores"
 	"github.com/docker/docker/client"
@@ -55,7 +56,15 @@ func (d *DockerModule) Init(logger *slog.Logger, stores *stores.KVStores, nc *na
 		_, err := cli.Info(context.Background())
 		if err != nil {
 			d.hasDocker = false
+			d.Logger.Error("docker test", "error", err)
 
+			errt := d.BaseModule.CreateToast(components.Toast{
+				Message: "Docker not found. Disabling.",
+				Type:    components.AlertError,
+			})
+			if errt != nil {
+				d.Logger.Error("creating toast", "error", errt)
+			}
 		} else {
 			d.client = cli
 			d.hasDocker = true
