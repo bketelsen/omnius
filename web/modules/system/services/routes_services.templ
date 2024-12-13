@@ -5,11 +5,12 @@ import (
 	"github.com/bketelsen/omnius/web/layouts"
 	"github.com/coreos/go-systemd/v22/dbus"
 	datastar "github.com/starfederation/datastar/sdk/go"
+	"net/http"
 	"strconv"
 )
 
-templ ServicesPage(units []dbus.UnitStatus) {
-	@layouts.Page([]*layouts.SidebarGroup{}) {
+templ ServicesPage(r *http.Request, u string, units []dbus.UnitStatus) {
+	@layouts.Page(r, u, []*layouts.SidebarGroup{}) {
 		@components.CardGallery() {
 			@ServiceDetail(units)
 		}

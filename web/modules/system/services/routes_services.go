@@ -14,6 +14,20 @@ import (
 	datastar "github.com/starfederation/datastar/sdk/go"
 )
 
+type CtxKey string
+
+const (
+	CtxKeyUser CtxKey = "user"
+)
+
+func UserFromContext(ctx context.Context) (string, bool) {
+	userID, ok := ctx.Value(CtxKeyUser).(string)
+	return userID, ok
+}
+
+func ContextWithUser(ctx context.Context, user string) context.Context {
+	return context.WithValue(ctx, CtxKeyUser, user)
+}
 func SetupServicesRoutes(r chi.Router, cli *client.Client, ns *embeddednats.Server, stores *stores.KVStores, ctx context.Context) error {
 	r.Route("/services", func(serviceRouter chi.Router) {
 
@@ -21,6 +35,8 @@ func SetupServicesRoutes(r chi.Router, cli *client.Client, ns *embeddednats.Serv
 		serviceRouter.Route("/", func(servicesRouter chi.Router) {
 
 			servicesRouter.Get("/", func(w http.ResponseWriter, r *http.Request) {
+				ctx := r.Context()
+				u, _ := UserFromContext(ctx)
 				systemdConnection, _ := dbus.NewSystemConnectionContext(context.Background())
 				defer systemdConnection.Close()
 				var (
@@ -31,7 +47,7 @@ func SetupServicesRoutes(r chi.Router, cli *client.Client, ns *embeddednats.Serv
 					http.Error(w, err.Error(), http.StatusInternalServerError)
 					return
 				}
-				ServicesPage(units).Render(r.Context(), w)
+				ServicesPage(r, u, units).Render(r.Context(), w)
 			})
 
 		})

@@ -18,11 +18,28 @@ import (
 	datastar "github.com/starfederation/datastar/sdk/go"
 )
 
+type CtxKey string
+
+const (
+	CtxKeyUser CtxKey = "user"
+)
+
+func UserFromContext(ctx context.Context) (string, bool) {
+	userID, ok := ctx.Value(CtxKeyUser).(string)
+	return userID, ok
+}
+
+func ContextWithUser(ctx context.Context, user string) context.Context {
+	return context.WithValue(ctx, CtxKeyUser, user)
+}
+
 func (dm *SystemModule) SetupRoutes(r chi.Router, sidebarGroups []*layouts.SidebarGroup, ctx context.Context) error {
 	dm.Logger.Info("Setting up System Routes")
 	r.Route("/"+ModuleName, func(systemRouter chi.Router) {
 
 		systemRouter.Get("/", func(w http.ResponseWriter, r *http.Request) {
+			ctx := r.Context()
+			u, _ := UserFromContext(ctx)
 			v, err := mem.VirtualMemory()
 
 			if err != nil {
@@ -35,7 +52,7 @@ func (dm *SystemModule) SetupRoutes(r chi.Router, sidebarGroups []*layouts.Sideb
 				Cores:       0,
 			}
 			containers := []types.Container{}
-			SystemPage(sidebarGroups, c, v, containers).Render(r.Context(), w)
+			SystemPage(r, u, sidebarGroups, c, v, containers).Render(r.Context(), w)
 		})
 
 		systemRouter.Get("/poll", func(w http.ResponseWriter, r *http.Request) {

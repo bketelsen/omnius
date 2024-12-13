@@ -5,10 +5,11 @@ import (
 	"github.com/bketelsen/omnius/web/layouts"
 	"github.com/docker/docker/api/types"
 	datastar "github.com/starfederation/datastar/sdk/go"
+	"net/http"
 )
 
-templ NetworkPage(containers []types.Container) {
-	@layouts.Page([]*layouts.SidebarGroup{}) {
+templ NetworkPage(r *http.Request, u string, containers []types.Container) {
+	@layouts.Page(r, u, []*layouts.SidebarGroup{}) {
 		@components.CardGallery() {
 			@NetworkOverview(containers)
 		}

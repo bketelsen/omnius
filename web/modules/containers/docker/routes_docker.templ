@@ -7,12 +7,13 @@ import (
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/image"
 	datastar "github.com/starfederation/datastar/sdk/go"
+	"net/http"
 	"strconv"
 	"strings"
 )
 
-templ DockerPage(sidebarGroups []*layouts.SidebarGroup, containers []types.Container, images []image.Summary) {
-	@layouts.Page(sidebarGroups) {
+templ DockerPage(r *http.Request, u string, sidebarGroups []*layouts.SidebarGroup, containers []types.Container, images []image.Summary) {
+	@layouts.Page(r, u, sidebarGroups) {
 		<div data-on-load="sse('/docker/poll')">
 			@components.CardGallery() {
 				@DockerDetail(containers)

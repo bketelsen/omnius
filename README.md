@@ -18,5 +18,7 @@
 - [ ] polkit?
 
 
+## Security
 
-
+Omnius runs as root
+Users are verified by an ssh+password login to localhost

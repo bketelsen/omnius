@@ -14,12 +14,29 @@ import (
 	datastar "github.com/starfederation/datastar/sdk/go"
 )
 
+type CtxKey string
+
+const (
+	CtxKeyUser CtxKey = "user"
+)
+
+func UserFromContext(ctx context.Context) (string, bool) {
+	userID, ok := ctx.Value(CtxKeyUser).(string)
+	return userID, ok
+}
+
+func ContextWithUser(ctx context.Context, user string) context.Context {
+	return context.WithValue(ctx, CtxKeyUser, user)
+}
+
 func (dm *DockerModule) SetupRoutes(r chi.Router, sidebarGroups []*layouts.SidebarGroup, ctx context.Context) error {
 	dm.Logger.Info("Setting up Docker Routes")
 
 	r.Route("/docker", func(dockerRouter chi.Router) {
 
 		dockerRouter.Get("/", func(w http.ResponseWriter, r *http.Request) {
+			ctx := r.Context()
+			u, _ := UserFromContext(ctx)
 			var (
 				containers []types.Container
 				images     []image.Summary
@@ -29,7 +46,7 @@ func (dm *DockerModule) SetupRoutes(r chi.Router, sidebarGroups []*layouts.Sideb
 				http.Error(w, err.Error(), http.StatusInternalServerError)
 				return
 			}
-			DockerPage(sidebarGroups, containers, images).Render(r.Context(), w)
+			DockerPage(r, u, sidebarGroups, containers, images).Render(r.Context(), w)
 		})
 
 		dockerRouter.Get("/poll", func(w http.ResponseWriter, r *http.Request) {

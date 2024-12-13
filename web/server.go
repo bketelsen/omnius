@@ -13,6 +13,7 @@ import (
 	"github.com/bketelsen/omnius/web/components"
 	"github.com/bketelsen/omnius/web/layouts"
 	"github.com/bketelsen/omnius/web/modules"
+	"github.com/gorilla/sessions"
 
 	// register modules
 	_ "github.com/bketelsen/omnius/web/modules/containers/docker"
@@ -53,6 +54,8 @@ func NewServer(port int, logger *slog.Logger) *Server {
 
 func (s *Server) RunBlocking() toolbelt.CtxErrFunc {
 	s.Logger.Info(fmt.Sprintf("Starting Server @:%d", s.Port))
+	sessionStore := sessions.NewCookieStore([]byte("conduit"))
+	sessionStore.MaxAge(int(24 * time.Hour / time.Second))
 
 	return func(ctx context.Context) (err error) {
 
@@ -153,6 +156,7 @@ func (s *Server) RunBlocking() toolbelt.CtxErrFunc {
 			}
 		}
 		fmt.Println(s.Categories)
+		setupAuthRoutes(router, sessionStore, s.Categories)
 		ctx, cancel := context.WithCancel(ctx)
 		for k, v := range modules.AvailableModules {
 			fmt.Println(k, v)

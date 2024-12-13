@@ -1,6 +1,7 @@
 package networking
 
 import (
+	"context"
 	"net/http"
 	"time"
 
@@ -12,11 +13,27 @@ import (
 	datastar "github.com/starfederation/datastar/sdk/go"
 )
 
+type CtxKey string
+
+const (
+	CtxKeyUser CtxKey = "user"
+)
+
+func UserFromContext(ctx context.Context) (string, bool) {
+	userID, ok := ctx.Value(CtxKeyUser).(string)
+	return userID, ok
+}
+
+func ContextWithUser(ctx context.Context, user string) context.Context {
+	return context.WithValue(ctx, CtxKeyUser, user)
+}
 func SetupNetworkingRoutes(r chi.Router, cli *client.Client, ns *embeddednats.Server) error {
 
 	r.Route("/networking", func(networkRouter chi.Router) {
 
 		networkRouter.Get("/", func(w http.ResponseWriter, r *http.Request) {
+			ctx := r.Context()
+			u, _ := UserFromContext(ctx)
 			var (
 				containers []types.Container
 				err        error
@@ -25,7 +42,7 @@ func SetupNetworkingRoutes(r chi.Router, cli *client.Client, ns *embeddednats.Se
 				http.Error(w, err.Error(), http.StatusInternalServerError)
 				return
 			}
-			NetworkPage(containers).Render(r.Context(), w)
+			NetworkPage(r, u, containers).Render(r.Context(), w)
 		})
 
 		networkRouter.Get("/api", func(w http.ResponseWriter, r *http.Request) {
