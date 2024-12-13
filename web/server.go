@@ -104,7 +104,7 @@ func (s *Server) RunBlocking() toolbelt.CtxErrFunc {
 
 		toast := components.Toast{
 			Title:   "Welcome to OMNIUS",
-			Message: "OMNIUS is a toolbelt for managing your containers and system",
+			Message: "OMNIUS is a toolbelt for managing your system",
 			Type:    components.AlertInfo,
 		}
 		toastBytes, err := json.Marshal(toast)
@@ -116,13 +116,6 @@ func (s *Server) RunBlocking() toolbelt.CtxErrFunc {
 				s.Logger.Error(err.Error())
 			}
 		}
-		go func() {
-			time.Sleep(20 * time.Second)
-			err = kvstore.MessageStore.Delete(ctx, "welcome")
-			if err != nil {
-				s.Logger.Error(err.Error())
-			}
-		}()
 
 		// setup sidebar groups
 		for k, v := range modules.AvailableModules {

@@ -23,7 +23,7 @@ func (d *DockerModule) Poll(ctx context.Context) {
 			return
 
 		case <-time.After(Interval):
-			d.Logger.Info("tick")
+			d.Logger.Debug("tick")
 
 			// containers
 			var (
@@ -53,7 +53,7 @@ func (d *DockerModule) Poll(ctx context.Context) {
 			if currentVal != nil {
 				if h != hash(currentVal.Value()) {
 					// update
-					d.Logger.Info("containers different, updating")
+					d.Logger.Debug("containers different, updating")
 					if _, err := d.Store.Put(context.Background(), "containers", b); err != nil {
 						slog.Error(err.Error())
 
@@ -61,7 +61,7 @@ func (d *DockerModule) Poll(ctx context.Context) {
 				}
 			} else {
 				// no current value, set it
-				d.Logger.Info("setting containers value")
+				d.Logger.Debug("setting containers value")
 				if _, err := d.Store.Put(context.Background(), "containers", b); err != nil {
 					slog.Error(err.Error())
 					continue
@@ -71,7 +71,10 @@ func (d *DockerModule) Poll(ctx context.Context) {
 			var (
 				images []image.Summary
 			)
-			if images, err = d.client.ImageList(context.Background(), image.ListOptions{}); err != nil {
+			if images, err = d.client.ImageList(context.Background(), image.ListOptions{
+				Manifests:  true,
+				SharedSize: true,
+			}); err != nil {
 				d.Logger.Error(err.Error())
 				continue
 			}
@@ -80,6 +83,7 @@ func (d *DockerModule) Poll(ctx context.Context) {
 				d.Logger.Error(err.Error())
 				continue
 			}
+			d.Logger.Debug("setting images")
 			if _, err := d.Store.Put(context.Background(), "images", b); err != nil {
 				d.Logger.Error(err.Error())
 				continue

@@ -49,12 +49,15 @@ func (dm *SystemModule) SetupRoutes(r chi.Router, sidebarGroups []*layouts.Sideb
 				return
 			}
 			defer syswatcher.Stop()
+			// docker container updates
 			dockerwatcher, err := dm.Stores.DockerStore.Watch(ctx, "containers")
 			if err != nil {
 				http.Error(w, err.Error(), http.StatusInternalServerError)
 				return
 			}
 			defer dockerwatcher.Stop()
+
+			// message updates
 			messagewatcher, err := dm.Stores.MessageStore.WatchAll(ctx)
 			if err != nil {
 				http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -71,22 +74,21 @@ func (dm *SystemModule) SetupRoutes(r chi.Router, sidebarGroups []*layouts.Sideb
 					if entry == nil {
 						continue
 					}
-					dm.Logger.Info("update", "operation", entry.Operation())
+					dm.Logger.Debug("update", "operation", entry.Operation())
 					keys, err := dm.Stores.MessageStore.Keys(ctx)
 					if err != nil {
 						dm.Logger.Error("Message Update", "error", err)
 					}
-					dm.Logger.Info("keys", "keys", keys)
 					var toasts []components.Toast
 					for _, key := range keys {
-						dm.Logger.Info("key", "key", key)
+						dm.Logger.Debug("key", "key", key)
 						val, err := dm.Stores.MessageStore.Get(ctx, key)
 						if err != nil {
 							dm.Logger.Error("Message Update", "error", err)
 						}
 						var toast components.Toast
 						if err := json.Unmarshal(val.Value(), &toast); err != nil {
-							dm.Logger.Error("Message Update", "error", err)
+							dm.Logger.Error("json unmarshal", "error", err)
 							sse.ConsoleError(err)
 							continue
 						}
@@ -164,44 +166,6 @@ func (dm *SystemModule) SetupRoutes(r chi.Router, sidebarGroups []*layouts.Sideb
 					}
 				}
 			}
-		})
-		systemRouter.Get("/api/memory", func(w http.ResponseWriter, r *http.Request) {
-			v, err := mem.VirtualMemory()
-
-			if err != nil {
-				http.Error(w, err.Error(), http.StatusInternalServerError)
-				return
-			}
-
-			sse := datastar.NewSSE(w, r)
-			// do it quick to avoid page delay
-			c := memoryDetailCard(v)
-
-			if err := sse.MergeFragmentTempl(c); err != nil {
-				sse.ConsoleError(err)
-				return
-			}
-
-			ctx := r.Context()
-			// now loop
-			for {
-				select {
-				case <-ctx.Done():
-					return
-				case <-time.After(1 * time.Second):
-					if v, err = mem.VirtualMemory(); err != nil {
-						http.Error(w, err.Error(), http.StatusInternalServerError)
-						return
-					}
-					c := memoryDetailCard(v)
-
-					if err := sse.MergeFragmentTempl(c); err != nil {
-						sse.ConsoleError(err)
-						return
-					}
-				}
-			}
-
 		})
 
 	})

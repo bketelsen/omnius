@@ -32,21 +32,43 @@ func (dm *DockerModule) SetupRoutes(r chi.Router, sidebarGroups []*layouts.Sideb
 			DockerPage(sidebarGroups, containers, images).Render(r.Context(), w)
 		})
 
-		dockerRouter.Get("/api", func(w http.ResponseWriter, r *http.Request) {
+		dockerRouter.Get("/poll", func(w http.ResponseWriter, r *http.Request) {
 
 			sse := datastar.NewSSE(w, r)
-			dockerwatcher, err := dm.Stores.DockerStore.Watch(ctx, "containers")
+			ctwatcher, err := dm.Stores.DockerStore.Watch(ctx, "containers")
 			if err != nil {
 				http.Error(w, err.Error(), http.StatusInternalServerError)
 				return
 			}
-			defer dockerwatcher.Stop()
+			defer ctwatcher.Stop()
 
+			imgwatcher, err := dm.Stores.DockerStore.Watch(ctx, "images")
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+			defer imgwatcher.Stop()
 			for {
 				select {
 				case <-ctx.Done():
 					return
-				case entry := <-dockerwatcher.Updates():
+				case entry := <-imgwatcher.Updates():
+					//	slog.Info("Docker Update", "entry", entry)
+					if entry == nil {
+						continue
+					}
+					var cc []image.Summary
+					if err := json.Unmarshal(entry.Value(), &cc); err != nil {
+						dm.Logger.Error("Docker Update", "error", err)
+						sse.ConsoleError(err)
+						continue
+					}
+					c := ImageOverview(cc)
+					if err := sse.MergeFragmentTempl(c); err != nil {
+						sse.ConsoleError(err)
+						return
+					}
+				case entry := <-ctwatcher.Updates():
 					//	slog.Info("Docker Update", "entry", entry)
 					if entry == nil {
 						continue
@@ -57,7 +79,7 @@ func (dm *DockerModule) SetupRoutes(r chi.Router, sidebarGroups []*layouts.Sideb
 						sse.ConsoleError(err)
 						continue
 					}
-					c := DockerOverviewCard(cc)
+					c := DockerDetail(cc)
 					if err := sse.MergeFragmentTempl(c); err != nil {
 						sse.ConsoleError(err)
 						return

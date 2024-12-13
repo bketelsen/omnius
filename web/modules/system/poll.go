@@ -34,7 +34,7 @@ func (d *SystemModule) Poll(ctx context.Context) {
 			defer d.Logger.Info("Stopping system updates")
 			return
 		case <-time.After(2 * time.Second):
-			d.Logger.Info("system tick")
+			d.Logger.Debug("system tick")
 
 			var (
 				err error
