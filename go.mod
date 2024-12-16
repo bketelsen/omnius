@@ -10,6 +10,7 @@ require (
 	github.com/docker/docker v27.4.0+incompatible
 	github.com/go-chi/chi/v5 v5.2.0
 	github.com/google/uuid v1.6.0
+	github.com/gorilla/sessions v1.4.0
 	github.com/nats-io/nats-server/v2 v2.10.23
 	github.com/nats-io/nats.go v1.37.0
 	github.com/shirou/gopsutil v3.21.11+incompatible
@@ -41,6 +42,7 @@ require (
 	github.com/goccy/go-json v0.10.4 // indirect
 	github.com/godbus/dbus/v5 v5.1.0 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
+	github.com/gorilla/securecookie v1.1.2 // indirect
 	github.com/iancoleman/strcase v0.3.0 // indirect
 	github.com/igrmk/treemap/v2 v2.0.1 // indirect
 	github.com/klauspost/compress v1.17.11 // indirect

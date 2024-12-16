@@ -16,7 +16,7 @@ func (d *IncusModule) Poll(ctx context.Context) {
 			return
 
 		case <-time.After(Interval):
-			d.Logger.Info("tick")
+			d.Logger.Debug("tick")
 
 		}
 	}

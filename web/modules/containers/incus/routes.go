@@ -8,14 +8,30 @@ import (
 	"github.com/go-chi/chi/v5"
 )
 
+type CtxKey string
+
+const (
+	CtxKeyUser CtxKey = "user"
+)
+
+func UserFromContext(ctx context.Context) (string, bool) {
+	userID, ok := ctx.Value(CtxKeyUser).(string)
+	return userID, ok
+}
+
+func ContextWithUser(ctx context.Context, user string) context.Context {
+	return context.WithValue(ctx, CtxKeyUser, user)
+}
+
 func (dm *IncusModule) SetupRoutes(r chi.Router, sidebarGroups []*layouts.SidebarGroup, ctx context.Context) error {
 	dm.Logger.Info("Setting up Incus Routes")
 
 	r.Route("/incus", func(incusRouter chi.Router) {
 
 		incusRouter.Get("/", func(w http.ResponseWriter, r *http.Request) {
-
-			IncusPage(sidebarGroups).Render(r.Context(), w)
+			ctx := r.Context()
+			u, _ := UserFromContext(ctx)
+			IncusPage(r, u, sidebarGroups).Render(r.Context(), w)
 		})
 
 		incusRouter.Get("/api", func(w http.ResponseWriter, r *http.Request) {

@@ -4,11 +4,11 @@ import (
 	"log/slog"
 	"time"
 
+	"github.com/bketelsen/omnius/web/components"
 	"github.com/bketelsen/omnius/web/modules"
 	"github.com/bketelsen/omnius/web/stores"
 	"github.com/nats-io/nats.go"
 	"github.com/nats-io/nats.go/jetstream"
-	"github.com/zeebo/xxh3"
 )
 
 const (
@@ -41,6 +41,13 @@ func (d *IncusModule) Init(logger *slog.Logger, stores *stores.KVStores, nc *nat
 
 	d.CreateStore(stores)
 
+	errt := d.BaseModule.CreateToast(components.Toast{
+		Message: "Incus not found. Disabling.",
+		Type:    components.AlertError,
+	})
+	if errt != nil {
+		d.Logger.Error("creating toast", "error", errt)
+	}
 	return nil
 }
 
@@ -49,15 +56,4 @@ func (d *IncusModule) Enabled() bool {
 }
 func (d *IncusModule) Group() string {
 	return Group
-}
-
-func hash(b []byte) uint64 {
-	hasher := xxh3.New()
-	defer hasher.Reset()
-
-	_, err := hasher.Write(b)
-	if err != nil {
-		slog.Error(err.Error())
-	}
-	return hasher.Sum64()
 }

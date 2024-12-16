@@ -13,11 +13,12 @@ import (
 	"github.com/coreos/go-systemd/v22/dbus"
 	"github.com/docker/docker/api/types"
 	"github.com/shirou/gopsutil/v4/mem"
+	"net/http"
 	"strconv"
 )
 
-templ SystemPage(groups []*layouts.SidebarGroup, c CPUSimple, v *mem.VirtualMemoryStat, containers []types.Container) {
-	@layouts.Page(groups) {
+templ SystemPage(r *http.Request, u string, groups []*layouts.SidebarGroup, c CPUSimple, v *mem.VirtualMemoryStat, containers []types.Container) {
+	@layouts.Page(r, u, groups) {
 		<div data-on-load="sse('/overview/poll')">
 			@components.CardGallery() {
 				@CPUDetail(c)

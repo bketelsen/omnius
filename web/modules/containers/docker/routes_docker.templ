@@ -7,12 +7,13 @@ import (
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/image"
 	datastar "github.com/starfederation/datastar/sdk/go"
+	"net/http"
 	"strconv"
 	"strings"
 )
 
-templ DockerPage(sidebarGroups []*layouts.SidebarGroup, containers []types.Container, images []image.Summary) {
-	@layouts.Page(sidebarGroups) {
+templ DockerPage(r *http.Request, u string, sidebarGroups []*layouts.SidebarGroup, containers []types.Container, images []image.Summary) {
+	@layouts.Page(r, u, sidebarGroups) {
 		<div data-on-load="sse('/docker/poll')">
 			@components.CardGallery() {
 				@DockerDetail(containers)
@@ -37,15 +38,19 @@ templ DockerOverviewCard(containers []types.Container) {
 }
 
 templ DockerDetail(containers []types.Container) {
-	@components.DetailCard("Docker Containers", "/docker") {
-		@DockerContainer(containers)
-	}
+	<div id="dockerdetail">
+		@components.DetailCard("Docker Containers", "/docker") {
+			@DockerContainer(containers)
+		}
+	</div>
 }
 
 templ ImageOverview(images []image.Summary) {
-	@components.DetailCard("Docker Images", "/docker/images") {
-		@DockerImages(images)
-	}
+	<div id="imageoverview">
+		@components.DetailCard("Docker Images", "/docker/images") {
+			@DockerImages(images)
+		}
+	</div>
 }
 
 templ DockerContainer(containers []types.Container) {
@@ -99,8 +104,8 @@ templ DockerImages(images []image.Summary) {
 					<th></th>
 					<th>ID</th>
 					<th>Image</th>
-					<th>Status</th>
-					<th>Actions</th>
+					<th>Repo/Tags</th>
+					<th>Size</th>
 				</tr>
 			</thead>
 			<tbody>
@@ -110,10 +115,11 @@ templ DockerImages(images []image.Summary) {
 						<th></th>
 						<td>{ image.ID[0:12] }</td>
 						<td></td>
-						<td></td>
-						<td>
-							<div class="join"></div>
-						</td>
+						<td>{ image.RepoTags[0] }</td>
+						<td>{ fmt.Sprintf("%d", image.Size) }</td>
+						// <td>
+						// 	<div class="join"></div>
+						// </td>
 					</tr>
 				}
 			</tbody>

@@ -18,11 +18,28 @@ import (
 	datastar "github.com/starfederation/datastar/sdk/go"
 )
 
+type CtxKey string
+
+const (
+	CtxKeyUser CtxKey = "user"
+)
+
+func UserFromContext(ctx context.Context) (string, bool) {
+	userID, ok := ctx.Value(CtxKeyUser).(string)
+	return userID, ok
+}
+
+func ContextWithUser(ctx context.Context, user string) context.Context {
+	return context.WithValue(ctx, CtxKeyUser, user)
+}
+
 func (dm *SystemModule) SetupRoutes(r chi.Router, sidebarGroups []*layouts.SidebarGroup, ctx context.Context) error {
 	dm.Logger.Info("Setting up System Routes")
 	r.Route("/"+ModuleName, func(systemRouter chi.Router) {
 
 		systemRouter.Get("/", func(w http.ResponseWriter, r *http.Request) {
+			ctx := r.Context()
+			u, _ := UserFromContext(ctx)
 			v, err := mem.VirtualMemory()
 
 			if err != nil {
@@ -35,7 +52,7 @@ func (dm *SystemModule) SetupRoutes(r chi.Router, sidebarGroups []*layouts.Sideb
 				Cores:       0,
 			}
 			containers := []types.Container{}
-			SystemPage(sidebarGroups, c, v, containers).Render(r.Context(), w)
+			SystemPage(r, u, sidebarGroups, c, v, containers).Render(r.Context(), w)
 		})
 
 		systemRouter.Get("/poll", func(w http.ResponseWriter, r *http.Request) {
@@ -49,12 +66,15 @@ func (dm *SystemModule) SetupRoutes(r chi.Router, sidebarGroups []*layouts.Sideb
 				return
 			}
 			defer syswatcher.Stop()
+			// docker container updates
 			dockerwatcher, err := dm.Stores.DockerStore.Watch(ctx, "containers")
 			if err != nil {
 				http.Error(w, err.Error(), http.StatusInternalServerError)
 				return
 			}
 			defer dockerwatcher.Stop()
+
+			// message updates
 			messagewatcher, err := dm.Stores.MessageStore.WatchAll(ctx)
 			if err != nil {
 				http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -71,26 +91,26 @@ func (dm *SystemModule) SetupRoutes(r chi.Router, sidebarGroups []*layouts.Sideb
 					if entry == nil {
 						continue
 					}
-					dm.Logger.Info("update", "operation", entry.Operation())
+					dm.Logger.Debug("update", "operation", entry.Operation())
 					keys, err := dm.Stores.MessageStore.Keys(ctx)
 					if err != nil {
 						dm.Logger.Error("Message Update", "error", err)
 					}
-					dm.Logger.Info("keys", "keys", keys)
 					var toasts []components.Toast
 					for _, key := range keys {
-						dm.Logger.Info("key", "key", key)
+						dm.Logger.Debug("key", "key", key)
 						val, err := dm.Stores.MessageStore.Get(ctx, key)
 						if err != nil {
 							dm.Logger.Error("Message Update", "error", err)
 						}
 						var toast components.Toast
 						if err := json.Unmarshal(val.Value(), &toast); err != nil {
-							dm.Logger.Error("Message Update", "error", err)
+							dm.Logger.Error("json unmarshal", "error", err)
 							sse.ConsoleError(err)
 							continue
 						}
 						toasts = append(toasts, toast)
+						dm.BaseModule.ExpireToast(key, 10*time.Second)
 					}
 					c := components.ToastUpdate(toasts)
 
@@ -99,27 +119,6 @@ func (dm *SystemModule) SetupRoutes(r chi.Router, sidebarGroups []*layouts.Sideb
 						return
 					}
 
-					// if entry.Operation() == jetstream.KeyValueDelete {
-					// 	c := components.ToastUpdate([]components.Toast{})
-					// 	if err := sse.MergeFragmentTempl(c); err != nil {
-					// 		sse.ConsoleError(err)
-					// 		return
-					// 	}
-					// } else {
-					// 	var toast components.Toast
-					// 	if err := json.Unmarshal(entry.Value(), &toast); err != nil {
-					// 		dm.Logger.Error("Message Update", "error", err)
-					// 		sse.ConsoleError(err)
-					// 		continue
-					// 	}
-
-					// 	c := components.ToastUpdate([]components.Toast{toast})
-
-					// 	if err := sse.MergeFragmentTempl(c); err != nil {
-					// 		sse.ConsoleError(err)
-					// 		return
-					// 	}
-					// }
 				case entry := <-dockerwatcher.Updates():
 					//	slog.Info("Docker Update", "entry", entry)
 					if entry == nil {
@@ -137,7 +136,7 @@ func (dm *SystemModule) SetupRoutes(r chi.Router, sidebarGroups []*layouts.Sideb
 						return
 					}
 				case entry := <-syswatcher.Updates():
-					dm.Logger.Info("System Update", "entry", entry)
+					//dm.Logger.Info("System Update", "entry", entry)
 					if entry == nil {
 						continue
 					}
@@ -184,44 +183,6 @@ func (dm *SystemModule) SetupRoutes(r chi.Router, sidebarGroups []*layouts.Sideb
 					}
 				}
 			}
-		})
-		systemRouter.Get("/api/memory", func(w http.ResponseWriter, r *http.Request) {
-			v, err := mem.VirtualMemory()
-
-			if err != nil {
-				http.Error(w, err.Error(), http.StatusInternalServerError)
-				return
-			}
-
-			sse := datastar.NewSSE(w, r)
-			// do it quick to avoid page delay
-			c := memoryDetailCard(v)
-
-			if err := sse.MergeFragmentTempl(c); err != nil {
-				sse.ConsoleError(err)
-				return
-			}
-
-			ctx := r.Context()
-			// now loop
-			for {
-				select {
-				case <-ctx.Done():
-					return
-				case <-time.After(1 * time.Second):
-					if v, err = mem.VirtualMemory(); err != nil {
-						http.Error(w, err.Error(), http.StatusInternalServerError)
-						return
-					}
-					c := memoryDetailCard(v)
-
-					if err := sse.MergeFragmentTempl(c); err != nil {
-						sse.ConsoleError(err)
-						return
-					}
-				}
-			}
-
 		})
 
 	})

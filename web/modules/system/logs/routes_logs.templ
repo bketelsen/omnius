@@ -3,10 +3,11 @@ package logs
 import (
 	"github.com/bketelsen/omnius/web/components"
 	"github.com/bketelsen/omnius/web/layouts"
+	"net/http"
 )
 
-templ LogPage(sidebarGroups []*layouts.SidebarGroup) {
-	@layouts.Page(sidebarGroups) {
+templ LogPage(r *http.Request, u string, sidebarGroups []*layouts.SidebarGroup) {
+	@layouts.Page(r, u, sidebarGroups) {
 		<div data-on-load="sse('/Log/poll')">
 			@components.CardGallery() {
 				@LogDetail()

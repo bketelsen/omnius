@@ -3,10 +3,11 @@ package storage
 import (
 	"github.com/bketelsen/omnius/web/components"
 	"github.com/bketelsen/omnius/web/layouts"
+	"net/http"
 )
 
-templ StoragePage(sidebarGroups []*layouts.SidebarGroup) {
-	@layouts.Page(sidebarGroups) {
+templ StoragePage(r *http.Request, u string, sidebarGroups []*layouts.SidebarGroup) {
+	@layouts.Page(r, u, sidebarGroups) {
 		<div data-on-load="sse('/storage/poll')">
 			@components.CardGallery() {
 				@StorageDetail()

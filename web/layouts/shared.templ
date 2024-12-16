@@ -2,10 +2,11 @@ package layouts
 
 import (
 	"github.com/bketelsen/omnius/web/components"
+	"net/http"
 	"os"
 )
 
-templ Page(groups []*SidebarGroup) {
+templ Page(r *http.Request, u string, groups []*SidebarGroup) {
 	<!DOCTYPE html>
 	<html lang="en">
 		<head>
