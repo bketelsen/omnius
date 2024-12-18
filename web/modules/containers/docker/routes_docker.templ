@@ -102,9 +102,9 @@ templ DockerImages(images []image.Summary) {
 			<thead>
 				<tr>
 					<th></th>
-					<th>ID</th>
+					<th>Repo</th>
 					<th>Image</th>
-					<th>Repo/Tags</th>
+					<th>Tag</th>
 					<th>Size</th>
 				</tr>
 			</thead>
@@ -113,10 +113,14 @@ templ DockerImages(images []image.Summary) {
 					<!-- row 1 -->
 					<tr>
 						<th></th>
-						<td>{ image.ID[0:12] }</td>
-						<td></td>
-						<td>{ image.RepoTags[0] }</td>
-						<td>{ fmt.Sprintf("%d", image.Size) }</td>
+						<td>{ repo(image) }</td>
+						<td>{ imageid(image) }</td>
+						if len(image.RepoTags) > 0 {
+							<td>{ tag(image) }</td>
+						} else {
+							<td></td>
+						}
+						<td>{ ByteCountSI(image.Size) }</td>
 						// <td>
 						// 	<div class="join"></div>
 						// </td>
@@ -156,4 +160,51 @@ func ports(ctports []types.Port) string {
 		stripped = append(stripped, show)
 	}
 	return strings.Join(stripped, ", ")
+}
+
+func repo(image image.Summary) string {
+	if len(image.RepoTags) > 0 {
+		return strings.Split(image.RepoTags[0], ":")[0]
+
+	}
+	return "<none>"
+}
+func tag(image image.Summary) string {
+	if len(image.RepoTags) > 0 {
+		return strings.Split(image.RepoTags[0], ":")[1]
+
+	}
+	return "<none>"
+}
+func imageid(image image.Summary) string {
+
+	return strings.Split(image.ID, ":")[1][0:12]
+
+}
+func ByteCountSI(b int64) string {
+	const unit = 1000
+	if b < unit {
+		return fmt.Sprintf("%d B", b)
+	}
+	div, exp := int64(unit), 0
+	for n := b / unit; n >= unit; n /= unit {
+		div *= unit
+		exp++
+	}
+	return fmt.Sprintf("%.1f %cB",
+		float64(b)/float64(div), "kMGTPE"[exp])
+}
+
+func ByteCountIEC(b int64) string {
+	const unit = 1024
+	if b < unit {
+		return fmt.Sprintf("%d B", b)
+	}
+	div, exp := int64(unit), 0
+	for n := b / unit; n >= unit; n /= unit {
+		div *= unit
+		exp++
+	}
+	return fmt.Sprintf("%.1f %ciB",
+		float64(b)/float64(div), "KMGTPE"[exp])
 }

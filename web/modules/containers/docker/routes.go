@@ -80,10 +80,12 @@ func (dm *DockerModule) SetupRoutes(r chi.Router, sidebarGroups []*layouts.Sideb
 						sse.ConsoleError(err)
 						continue
 					}
-					c := ImageOverview(cc)
-					if err := sse.MergeFragmentTempl(c); err != nil {
-						sse.ConsoleError(err)
-						return
+					if len(cc) > 0 {
+						c := ImageOverview(cc)
+						if err := sse.MergeFragmentTempl(c); err != nil {
+							sse.ConsoleError(err)
+							return
+						}
 					}
 				case entry := <-ctwatcher.Updates():
 					//	slog.Info("Docker Update", "entry", entry)

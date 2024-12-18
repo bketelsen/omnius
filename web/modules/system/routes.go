@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"log/slog"
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/bketelsen/omnius/web/components"
@@ -149,11 +150,14 @@ func (dm *SystemModule) SetupRoutes(r chi.Router, sidebarGroups []*layouts.Sideb
 							sse.ConsoleError(err)
 							continue
 						}
-						c := memoryDetailCard(&v)
-						if err := sse.MergeFragmentTempl(c); err != nil {
-							sse.ConsoleError(err)
-							return
+						memStats := SystemMonitorSignals{
+							MemTotal:       ByteCountIEC(v.Total),
+							MemUsed:        ByteCountIEC(v.Used),
+							MemUsedPercent: strconv.FormatFloat(v.UsedPercent, 'f', 2, 64),
 						}
+						sse := datastar.NewSSE(w, r)
+						sse.MarshalAndMergeSignals(memStats)
+
 					case "services":
 						//	slog.Info("CPU Update")
 						var v []dbus.UnitStatus
@@ -175,11 +179,18 @@ func (dm *SystemModule) SetupRoutes(r chi.Router, sidebarGroups []*layouts.Sideb
 							sse.ConsoleError(err)
 							continue
 						}
-						c := cpuDetailCard(v)
-						if err := sse.MergeFragmentTempl(c); err != nil {
-							sse.ConsoleError(err)
-							return
+						// c := cpuDetailCard(v)
+						// if err := sse.MergeFragmentTempl(c); err != nil {
+						// 	sse.ConsoleError(err)
+						// 	return
+						// }
+						cpuStats := SystemMonitorSignals{
+							Cores:       strconv.Itoa(v.Cores),
+							Usage:       v.Used,
+							UsedPercent: v.UsedPercent,
 						}
+						sse := datastar.NewSSE(w, r)
+						sse.MarshalAndMergeSignals(cpuStats)
 					}
 				}
 			}

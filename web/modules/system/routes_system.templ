@@ -14,15 +14,29 @@ import (
 	"github.com/docker/docker/api/types"
 	"github.com/shirou/gopsutil/v4/mem"
 	"net/http"
-	"strconv"
 )
+
+type SystemMonitorSignals struct {
+	MemTotal       string `json:"memTotal,omitempty"`
+	MemUsed        string `json:"memUsed,omitempty"`
+	MemUsedPercent string `json:"memUsedPercent,omitempty"`
+	CpuUser        string `json:"cpuUser,omitempty"`
+	CpuSystem      string `json:"cpuSystem,omitempty"`
+	CpuIdle        string `json:"cpuIdle,omitempty"`
+	Cores          string `json:"cores,omitempty"`
+	Usage          string `json:"usage,omitempty"`
+	UsedPercent    string `json:"usedPercent,omitempty"`
+}
 
 templ SystemPage(r *http.Request, u string, groups []*layouts.SidebarGroup, c CPUSimple, v *mem.VirtualMemoryStat, containers []types.Container) {
 	@layouts.Page(r, u, groups) {
-		<div data-on-load="sse('/overview/poll')">
+		<div
+			data-on-load="sse('/overview/poll')"
+			data-signals="{memTotal:'', memUsed:'', memUsedPercent:'', cpuUser:'', cpuSystem:'', cpuIdle:'', cores:'', usage:'', usedPercent:''}"
+		>
 			@components.CardGallery() {
-				@CPUDetail(c)
-				@MemoryDetail(v)
+				@CPUDetail()
+				@MemoryDetail()
 				@logs.LogOverview()
 				@services.ServiceOverview([]dbus.UnitStatus{})
 				@storage.StorageOverview()
@@ -38,35 +52,52 @@ templ SystemOverview() {
 	@components.OverviewCard("System", "/overview")
 }
 
-templ CPUDetail(c CPUSimple) {
+templ CPUDetail() {
 	@components.DetailCard("CPU", "cpu") {
-		@cpuDetailCard(c)
+		@cpuDetailCard()
 	}
 }
 
-templ MemoryDetail(v *mem.VirtualMemoryStat) {
+templ MemoryDetail() {
 	@components.DetailCard("Memory", "memory") {
-		@memoryDetailCard(v)
+		@memoryDetailCard()
 	}
 }
 
-templ memoryDetailCard(v *mem.VirtualMemoryStat) {
+templ memoryDetailCard() {
 	<div id="memory">
-		@components.Stats() {
-			@components.Stat("Total Memory", ByteCountIEC(v.Total), "")
-			@components.Stat("Used Memory", ByteCountIEC(v.Used), "")
-		}
+		<div class="stats shadow">
+			<div class="stat">
+				<div class="stat-title">Total Memory</div>
+				<div class="stat-value"><span data-text="memTotal.value"></span></div>
+			</div>
+			<div class="stat">
+				<div class="stat-title">Used Memory</div>
+				<div class="stat-value"><span data-text="memUsed.value"></span></div>
+			</div>
+		</div>
+		<div>
+			0<progress class="progress progress-error w-56" data-attributes-value="memUsedPercent.value" max="100"></progress>100
+		</div>
 	</div>
 }
 
-templ cpuDetailCard(c CPUSimple) {
+templ cpuDetailCard() {
 	<div id="cpu">
-		@components.Stats() {
-			@components.Stat("Cores", strconv.Itoa(c.Cores), "")
-			@components.Stat("Usage", c.Used, "Percent")
-		}
+		<div class="stats shadow">
+			<div class="stat">
+				<div class="stat-title">Cores</div>
+				<div class="stat-value"><span data-text="cores.value"></span></div>
+				<div class="stat-desc">CPU Cores</div>
+			</div>
+			<div class="stat">
+				<div class="stat-title">Usage</div>
+				<div class="stat-value"><span data-text="usage.value"></span>%</div>
+				<div class="stat-desc">percent</div>
+			</div>
+		</div>
 		<div>
-			0<progress class="progress progress-error w-56" value={ c.UsedPercent } max="100"></progress>100
+			0<progress class="progress progress-error w-56" data-attributes-value="usedPercent.value" max="100"></progress>100
 		</div>
 	</div>
 }
