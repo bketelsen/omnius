@@ -12,6 +12,11 @@ import (
 	"strings"
 )
 
+type DockerStatus struct {
+	ActiveContainers string `json:"activeContainers,omitempty"`
+	ImageCount       string `json:"imageCount,omitempty"`
+}
+
 templ DockerPage(r *http.Request, u string, sidebarGroups []*layouts.SidebarGroup, containers []types.Container, images []image.Summary) {
 	@layouts.Page(r, u, sidebarGroups) {
 		<div data-on-load="sse('/docker/poll')">
@@ -133,14 +138,14 @@ templ DockerImages(images []image.Summary) {
 
 templ pauseButton(container types.Container) {
 	if container.State == "paused" {
-		<button class="join-item btn btn-xs btn-warning" data-on-click={ datastar.PostSSE("/docker/api/%s/unpause", container.ID) }>Unpause</button>
+		<button class="join-item btn btn-xs btn-warning" data-attributes-disabled="fetching.value" data-indicator-fetching data-on-click={ datastar.PostSSE("/docker/api/%s/unpause", container.ID) }>Unpause</button>
 	} else {
-		<button class="join-item btn btn-xs btn-warning " data-on-click={ datastar.PostSSE("/docker/api/%s/pause", container.ID) }>Pause</button>
+		<button class="join-item btn btn-xs btn-warning " data-attributes-disabled="fetching.value" data-indicator-fetching data-on-click={ datastar.PostSSE("/docker/api/%s/pause", container.ID) }>Pause</button>
 	}
 }
 
 templ startButton(container types.Container) {
-	<button class="join-item btn btn-xs btn-error " data-on-click={ datastar.PostSSE("/docker/api/%s/stop", container.ID) }>Stop</button>
+	<button class="join-item btn btn-xs btn-error " data-attributes-disabled="fetching.value" data-indicator-fetching data-on-click={ datastar.PostSSE("/docker/api/%s/stop", container.ID) }>Stop</button>
 }
 
 func names(ctnames []string) string {

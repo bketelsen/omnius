@@ -7,6 +7,7 @@ import (
 	"github.com/bketelsen/omnius/web/components"
 	"github.com/bketelsen/omnius/web/modules"
 	"github.com/bketelsen/omnius/web/stores"
+	incus "github.com/lxc/incus/v6/client"
 	"github.com/nats-io/nats.go"
 	"github.com/nats-io/nats.go/jetstream"
 )
@@ -30,6 +31,7 @@ var _ modules.Module = &IncusModule{}
 
 type IncusModule struct {
 	modules.BaseModule
+	client incus.InstanceServer
 }
 
 func (d *IncusModule) Init(logger *slog.Logger, stores *stores.KVStores, nc *nats.Conn, js jetstream.JetStream) error {
@@ -39,20 +41,27 @@ func (d *IncusModule) Init(logger *slog.Logger, stores *stores.KVStores, nc *nat
 	d.JetStream = js
 	d.Stores = stores
 
+	// Connect to Incus over the Unix socket
+	c, err := incus.ConnectIncusUnix("", nil)
+	if err != nil {
+		errt := d.BaseModule.CreateToast(components.Toast{
+			Message: "Unable to connect to incus",
+			Type:    components.AlertError,
+		})
+		if errt != nil {
+			d.Logger.Error("creating toast", "error", errt)
+		}
+		return err
+	}
+	d.client = c
+
 	d.CreateStore(stores)
 
-	errt := d.BaseModule.CreateToast(components.Toast{
-		Message: "Incus not found. Disabling.",
-		Type:    components.AlertError,
-	})
-	if errt != nil {
-		d.Logger.Error("creating toast", "error", errt)
-	}
 	return nil
 }
 
 func (d *IncusModule) Enabled() bool {
-	return true
+	return d.client != nil
 }
 func (d *IncusModule) Group() string {
 	return Group

@@ -104,7 +104,7 @@ templ ToastContainer() {
 templ ToastUpdate(toasts []Toast) {
 	<div id="omniustoast" class="toast">
 		for _, toast := range toasts {
-			<div class={ "alert " + toast.Type }>
+			<div role="alert" class={ "shadow-lg alert " + toast.Type }>
 				switch toast.Type {
 					case AlertSuccess:
 						@IconSuccess()
@@ -116,7 +116,10 @@ templ ToastUpdate(toasts []Toast) {
 						@IconError()
 					default:
 				}
-				<span>{ toast.Message }</span>
+				<div>
+					<h3 class="font-bold">{ toast.Title }</h3>
+					<div class="text-xs">{ toast.Message }</div>
+				</div>
 			</div>
 		}
 	</div>

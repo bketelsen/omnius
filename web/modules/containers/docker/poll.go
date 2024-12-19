@@ -3,7 +3,7 @@ package docker
 import (
 	"context"
 	"encoding/json"
-	"log/slog"
+	"strconv"
 	"strings"
 	"time"
 
@@ -55,7 +55,7 @@ func (d *DockerModule) Poll(ctx context.Context) {
 					// update
 					d.Logger.Debug("containers different, updating")
 					if _, err := d.Store.Put(context.Background(), "containers", b); err != nil {
-						slog.Error(err.Error())
+						d.Logger.Error(err.Error())
 
 					}
 				}
@@ -63,10 +63,11 @@ func (d *DockerModule) Poll(ctx context.Context) {
 				// no current value, set it
 				d.Logger.Debug("setting containers value")
 				if _, err := d.Store.Put(context.Background(), "containers", b); err != nil {
-					slog.Error(err.Error())
+					d.Logger.Error(err.Error())
 					continue
 				}
 			}
+
 			// images
 			var (
 				images []image.Summary
@@ -85,6 +86,21 @@ func (d *DockerModule) Poll(ctx context.Context) {
 			}
 			d.Logger.Debug("setting images")
 			if _, err := d.Store.Put(context.Background(), "images", b); err != nil {
+				d.Logger.Error(err.Error())
+				continue
+			}
+
+			// create a status for the overview/system page
+			ds := DockerStatus{
+				ActiveContainers: strconv.Itoa(len(containers)),
+				ImageCount:       strconv.Itoa(len(images)),
+			}
+			b, err = json.Marshal(ds)
+			if err != nil {
+				d.Logger.Error(err.Error())
+				continue
+			}
+			if _, err := d.Store.Put(context.Background(), "docker_status", b); err != nil {
 				d.Logger.Error(err.Error())
 				continue
 			}

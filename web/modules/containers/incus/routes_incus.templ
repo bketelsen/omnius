@@ -1,0 +1,163 @@
+package incus
+
+import (
+	"fmt"
+	"github.com/bketelsen/omnius/web/components"
+	"github.com/bketelsen/omnius/web/layouts"
+	"github.com/docker/docker/api/types"
+	"github.com/lxc/incus/v6/shared/api"
+	datastar "github.com/starfederation/datastar/sdk/go"
+	"net/http"
+	"strings"
+)
+
+type IncusStatus struct {
+	ActiveInstances string `json:"activeInstances,omitempty"`
+	ImageCount      string `json:"imageCount,omitempty"`
+}
+
+templ IncusPage(r *http.Request, u string, sidebarGroups []*layouts.SidebarGroup, containers []api.Instance, images []api.Image) {
+	@layouts.Page(r, u, sidebarGroups) {
+		<div data-on-load="sse('/incus/api')">
+			@components.CardGallery() {
+				@IncusDetail(containers)
+				@ImageOverview(images)
+			}
+		</div>
+	}
+}
+
+templ IncusOverview() {
+	@components.OverviewCard("Incus", "/incus") {
+		@IncusOverviewCard()
+	}
+}
+
+templ IncusOverviewCard() {
+	<div id="incusoverview">
+		@components.Stats() {
+			@components.Stat("Active Instances", "5", "")
+		}
+	</div>
+}
+
+templ IncusDetail(containers []api.Instance) {
+	<div id="incusdetail">
+		@components.DetailCard("Incus Instances", "/incus") {
+			@IncusContainer(containers)
+		}
+	</div>
+}
+
+templ ImageOverview(images []api.Image) {
+	<div id="imageoverview">
+		@components.DetailCard("Incus Images", "/incus/images") {
+			@IncusImages(images)
+		}
+	</div>
+}
+
+templ IncusContainer(instances []api.Instance) {
+	<div id="incuscontainers" class="overflow-x-auto">
+		<table class="table">
+			<!-- head -->
+			<thead>
+				<tr>
+					<th></th>
+					<th>Name</th>
+					<th>Image</th>
+					<th>Status</th>
+					<th>Type</th>
+					<th>Actions</th>
+				</tr>
+			</thead>
+			<tbody>
+				for _, container := range instances {
+					<!-- row 1 -->
+					<tr>
+						<th></th>
+						<td>{ container.Name }</td>
+						<td></td>
+						<td>{ container.Status }</td>
+						<td>{ container.Type }</td>
+						<td>
+							<div class="join">
+								@pauseButton(container)
+								@startButton(container)
+							</div>
+						</td>
+					</tr>
+				}
+			</tbody>
+		</table>
+	</div>
+}
+
+templ IncusImages(images []api.Image) {
+	<div id="incusimages" class="overflow-x-auto">
+		<table class="table">
+			<!-- head -->
+			<thead>
+				<tr>
+					<th></th>
+					<th>ID</th>
+					<th>Image</th>
+					<th>Type</th>
+					<th>Actions</th>
+				</tr>
+			</thead>
+			<tbody>
+				for _, image := range images {
+					<!-- row 1 -->
+					<tr>
+						<th></th>
+						<td>{ image.Fingerprint[0:12] }</td>
+						<td>{ image.Properties["os"] }</td>
+						<td>{ image.Type }</td>
+						<td></td>
+						<td>
+							<div class="join"></div>
+						</td>
+					</tr>
+				}
+			</tbody>
+		</table>
+	</div>
+}
+
+templ pauseButton(container api.Instance) {
+	if container.Status == "Frozen" {
+		<button id={ container.Name + "-unpause" } class="join-item btn btn-xs btn-warning" data-attributes-disabled="fetchingunpause.value" data-indicator-fetchingunpause data-on-click={ datastar.PostSSE("/incus/api/%s/unpause", container.Name) }>Unpause</button>
+	} else {
+		if container.Status == "Running" {
+			<button id={ container.Name + "-pause" } class="join-item btn btn-xs btn-warning " data-attributes-disabled="fetchingpause.value" data-indicator-fetchingpause data-on-click={ datastar.PostSSE("/incus/api/%s/pause", container.Name) }>Pause</button>
+		}
+	}
+}
+
+templ startButton(container api.Instance) {
+	if container.Status == "Stopped" {
+		<button id={ container.Name + "-start" } class="join-item btn btn-xs btn-error " data-attributes-disabled="fetchingstart.value" data-indicator-fetchingstart data-on-click={ datastar.PostSSE("/incus/api/%s/start", container.Name) }>Start</button>
+	} else {
+		<button id={ container.Name + "-stop" } class="join-item btn btn-xs btn-error " data-attributes-disabled="fetchingstop.value" data-indicator-fetchingstop data-on-click={ datastar.PostSSE("/incus/api/%s/stop", container.Name) }>Stop</button>
+	}
+}
+
+func names(ctnames []string) string {
+
+	stripped := []string{}
+	for _, n := range ctnames {
+		strippedName := strings.TrimPrefix(n, "/")
+		stripped = append(stripped, strippedName)
+	}
+	return strings.Join(stripped, ", ")
+}
+func ports(ctports []types.Port) string {
+
+	stripped := []string{}
+	for _, n := range ctports {
+		show := fmt.Sprintf("%s/%s:%d-%d", n.Type, n.IP, n.PublicPort, n.PrivatePort)
+		stripped = append(stripped, show)
+	}
+	return strings.Join(stripped, ", ")
+}

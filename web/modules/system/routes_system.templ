@@ -4,8 +4,6 @@ import (
 	"fmt"
 	"github.com/bketelsen/omnius/web/components"
 	"github.com/bketelsen/omnius/web/layouts"
-	"github.com/bketelsen/omnius/web/modules/containers/docker"
-	"github.com/bketelsen/omnius/web/modules/containers/incus"
 	"github.com/bketelsen/omnius/web/modules/system/logs"
 	"github.com/bketelsen/omnius/web/modules/system/networking"
 	"github.com/bketelsen/omnius/web/modules/system/services"
@@ -17,22 +15,28 @@ import (
 )
 
 type SystemMonitorSignals struct {
-	MemTotal       string `json:"memTotal,omitempty"`
-	MemUsed        string `json:"memUsed,omitempty"`
-	MemUsedPercent string `json:"memUsedPercent,omitempty"`
-	CpuUser        string `json:"cpuUser,omitempty"`
-	CpuSystem      string `json:"cpuSystem,omitempty"`
-	CpuIdle        string `json:"cpuIdle,omitempty"`
-	Cores          string `json:"cores,omitempty"`
-	Usage          string `json:"usage,omitempty"`
-	UsedPercent    string `json:"usedPercent,omitempty"`
+	MemTotal           string `json:"memTotal,omitempty"`
+	MemUsed            string `json:"memUsed,omitempty"`
+	MemUsedPercent     string `json:"memUsedPercent,omitempty"`
+	CpuUser            string `json:"cpuUser,omitempty"`
+	CpuSystem          string `json:"cpuSystem,omitempty"`
+	CpuIdle            string `json:"cpuIdle,omitempty"`
+	Cores              string `json:"cores,omitempty"`
+	Usage              string `json:"usage,omitempty"`
+	UsedPercent        string `json:"usedPercent,omitempty"`
+	DockerCount        string `json:"dockerCount,omitempty"`
+	DockerImageCount   string `json:"dockerImageCount,omitempty"`
+	DockerNetworkCount string `json:"dockerNetworkCount,omitempty"`
+	IncusCount         string `json:"incusCount,omitempty"`
+	IncusImageCount    string `json:"incusImageCount,omitempty"`
+	ActiveServiceCount string `json:"activeServiceCount,omitempty"`
 }
 
 templ SystemPage(r *http.Request, u string, groups []*layouts.SidebarGroup, c CPUSimple, v *mem.VirtualMemoryStat, containers []types.Container) {
 	@layouts.Page(r, u, groups) {
 		<div
 			data-on-load="sse('/overview/poll')"
-			data-signals="{memTotal:'', memUsed:'', memUsedPercent:'', cpuUser:'', cpuSystem:'', cpuIdle:'', cores:'', usage:'', usedPercent:''}"
+			data-signals="{dockerNetworkCount:'', incusCount:'', incusImageCount:'', activeServiceCount:'',dockerCount: '', dockerImageCount:'',memTotal:'', memUsed:'', memUsedPercent:'', cpuUser:'', cpuSystem:'', cpuIdle:'', cores:'', usage:'', usedPercent:''}"
 		>
 			@components.CardGallery() {
 				@CPUDetail()
@@ -41,8 +45,8 @@ templ SystemPage(r *http.Request, u string, groups []*layouts.SidebarGroup, c CP
 				@services.ServiceOverview([]dbus.UnitStatus{})
 				@storage.StorageOverview()
 				@networking.NetworkOverview([]types.Container{})
-				@docker.DockerOverview(containers)
-				@incus.IncusOverview()
+				@DockerOverview()
+				@IncusOverview()
 			}
 		</div>
 	}
@@ -50,6 +54,48 @@ templ SystemPage(r *http.Request, u string, groups []*layouts.SidebarGroup, c CP
 
 templ SystemOverview() {
 	@components.OverviewCard("System", "/overview")
+}
+
+templ DockerOverview() {
+	@components.OverviewCard("Docker", "/docker") {
+		@DockerOverviewCard()
+	}
+}
+
+templ DockerOverviewCard() {
+	<div id="dockeroverview">
+		<div class="stats shadow">
+			<div class="stat">
+				<div class="stat-title">Active Containers</div>
+				<div class="stat-value"><span data-text="dockerCount.value"></span></div>
+			</div>
+			<div class="stat">
+				<div class="stat-title">Images</div>
+				<div class="stat-value"><span data-text="dockerImageCount.value"></span></div>
+			</div>
+		</div>
+	</div>
+}
+
+templ IncusOverview() {
+	@components.OverviewCard("Incus", "/incus") {
+		@IncusOverviewCard()
+	}
+}
+
+templ IncusOverviewCard() {
+	<div id="incusoverview">
+		<div class="stats shadow">
+			<div class="stat">
+				<div class="stat-title">Active Instances</div>
+				<div class="stat-value"><span data-text="incusCount.value"></span></div>
+			</div>
+			<div class="stat">
+				<div class="stat-title">Images</div>
+				<div class="stat-value"><span data-text="incusImageCount.value"></span></div>
+			</div>
+		</div>
+	</div>
 }
 
 templ CPUDetail() {

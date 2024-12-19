@@ -11,6 +11,7 @@ import (
 	"github.com/bketelsen/omnius/web/components"
 	"github.com/bketelsen/omnius/web/layouts"
 	"github.com/bketelsen/omnius/web/modules/containers/docker"
+	"github.com/bketelsen/omnius/web/modules/containers/incus"
 	"github.com/bketelsen/omnius/web/modules/system/services"
 	"github.com/coreos/go-systemd/v22/dbus"
 	"github.com/docker/docker/api/types"
@@ -68,12 +69,19 @@ func (dm *SystemModule) SetupRoutes(r chi.Router, sidebarGroups []*layouts.Sideb
 			}
 			defer syswatcher.Stop()
 			// docker container updates
-			dockerwatcher, err := dm.Stores.DockerStore.Watch(ctx, "containers")
+			dockerwatcher, err := dm.Stores.DockerStore.Watch(ctx, "docker_status")
 			if err != nil {
 				http.Error(w, err.Error(), http.StatusInternalServerError)
 				return
 			}
 			defer dockerwatcher.Stop()
+			// docker container updates
+			incuswatcher, err := dm.Stores.IncusStore.Watch(ctx, "incus_status")
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+			defer incuswatcher.Stop()
 
 			// message updates
 			messagewatcher, err := dm.Stores.MessageStore.WatchAll(ctx)
@@ -119,23 +127,40 @@ func (dm *SystemModule) SetupRoutes(r chi.Router, sidebarGroups []*layouts.Sideb
 						sse.ConsoleError(err)
 						return
 					}
-
+				case entry := <-incuswatcher.Updates():
+					//	slog.Info("Docker Update", "entry", entry)
+					if entry == nil {
+						continue
+					}
+					var cc incus.IncusStatus
+					if err := json.Unmarshal(entry.Value(), &cc); err != nil {
+						slog.Error("Incus Update", "error", err)
+						sse.ConsoleError(err)
+						continue
+					}
+					incusStatus := SystemMonitorSignals{
+						IncusCount:      cc.ActiveInstances,
+						IncusImageCount: cc.ImageCount,
+					}
+					sse := datastar.NewSSE(w, r)
+					sse.MarshalAndMergeSignals(incusStatus)
 				case entry := <-dockerwatcher.Updates():
 					//	slog.Info("Docker Update", "entry", entry)
 					if entry == nil {
 						continue
 					}
-					var cc []types.Container
+					var cc docker.DockerStatus
 					if err := json.Unmarshal(entry.Value(), &cc); err != nil {
 						slog.Error("Docker Update", "error", err)
 						sse.ConsoleError(err)
 						continue
 					}
-					c := docker.DockerOverviewCard(cc)
-					if err := sse.MergeFragmentTempl(c); err != nil {
-						sse.ConsoleError(err)
-						return
+					dockerStats := SystemMonitorSignals{
+						DockerCount:      cc.ActiveContainers,
+						DockerImageCount: cc.ImageCount,
 					}
+					sse := datastar.NewSSE(w, r)
+					sse.MarshalAndMergeSignals(dockerStats)
 				case entry := <-syswatcher.Updates():
 					//dm.Logger.Info("System Update", "entry", entry)
 					if entry == nil {
